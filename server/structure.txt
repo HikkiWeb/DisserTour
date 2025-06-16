@@ -1,0 +1,32 @@
+server/
+├── config/              # Конфигурационные файлы
+│   ├── database.js     # Конфигурация базы данных
+│   └── config.js       # Общие настройки
+├── models/             # Модели Sequelize
+│   ├── User.js
+│   ├── Tour.js
+│   ├── Booking.js
+│   ├── Review.js
+│   └── index.js
+├── controllers/        # Контроллеры
+│   ├── authController.js
+│   ├── tourController.js
+│   ├── bookingController.js
+│   ├── reviewController.js
+│   └── userController.js
+├── routes/            # Маршруты API
+│   ├── auth.js
+│   ├── tours.js
+│   ├── bookings.js
+│   ├── reviews.js
+│   └── users.js
+├── middleware/        # Промежуточное ПО
+│   ├── auth.js
+│   ├── upload.js
+│   └── validation.js
+├── services/         # Бизнес-логика
+│   ├── emailService.js
+│   └── recommendationService.js
+├── utils/           # Вспомогательные функции
+├── uploads/         # Папка для загруженных файлов
+└── app.js          # Основной файл приложения 
