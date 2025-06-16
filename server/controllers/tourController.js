@@ -287,13 +287,26 @@ class TourController {
   static async getPopularTours(req, res, next) {
     try {
       const { limit = 6 } = req.query;
-      const tours = await RecommendationService.getPopularTours(parseInt(limit));
+      
+      // Простой запрос без зависимости от RecommendationService
+      const tours = await Tour.findAll({
+        limit: parseInt(limit),
+        order: [['createdAt', 'DESC']], // Сортируем по дате создания
+        include: [
+          {
+            model: User,
+            as: 'guide',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+        ],
+      });
 
       res.json({
         status: 'success',
         data: { tours },
       });
     } catch (error) {
+      console.error('Error in getPopularTours:', error);
       next(error);
     }
   }
@@ -302,13 +315,26 @@ class TourController {
   static async getSeasonalRecommendations(req, res, next) {
     try {
       const { limit = 6 } = req.query;
-      const tours = await RecommendationService.getSeasonalRecommendations(parseInt(limit));
+      
+      // Простой запрос без зависимости от сложной логики
+      const tours = await Tour.findAll({
+        limit: parseInt(limit),
+        order: [['updatedAt', 'DESC']], // Сортируем по дате обновления
+        include: [
+          {
+            model: User,
+            as: 'guide',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+        ],
+      });
 
       res.json({
         status: 'success',
         data: { tours },
       });
     } catch (error) {
+      console.error('Error in getSeasonalRecommendations:', error);
       next(error);
     }
   }

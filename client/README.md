@@ -1,70 +1,149 @@
-# Getting Started with Create React App
+# Туры Казахстана - Фронтенд
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Фронтенд приложения для бронирования авторских туров по Казахстану, построенный на React с TypeScript.
 
-## Available Scripts
+## Технологии
 
-In the project directory, you can run:
+- **React 19** - Основная библиотека
+- **TypeScript** - Типизация
+- **Material-UI** - UI компоненты
+- **React Router Dom** - Маршрутизация
+- **Axios** - HTTP клиент
+- **React Hook Form** - Обработка форм
+- **Yup** - Валидация
 
-### `npm start`
+## Архитектура
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```
+src/
+├── components/          # Переиспользуемые компоненты
+│   ├── Layout/         # Компоненты макета
+│   ├── TourCard.tsx    # Карточка тура
+│   └── ProtectedRoute.tsx
+├── pages/              # Страницы приложения
+│   ├── HomePage.tsx
+│   ├── ToursPage.tsx
+│   ├── LoginPage.tsx
+│   ├── RegisterPage.tsx
+│   ├── ProfilePage.tsx
+│   ├── BookingsPage.tsx
+│   └── DashboardPage.tsx
+├── context/            # React контексты
+│   └── AuthContext.tsx
+├── hooks/              # Кастомные хуки
+│   └── useTours.ts
+├── services/           # API сервисы
+│   └── api.ts
+├── types/              # TypeScript типы
+│   └── index.ts
+├── utils/              # Утилиты
+│   └── formatters.ts
+└── App.tsx
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Основные возможности
 
-### `npm test`
+### Аутентификация
+- Регистрация и вход в систему
+- Защищенные маршруты
+- Управление профилем
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Туры
+- Каталог туров с фильтрацией
+- Поиск по названию и описанию
+- Фильтры по категории, региону, цене, сложности
+- Детальная страница тура
+- Карточки туров с рейтингом
 
-### `npm run build`
+### Бронирование
+- Создание бронирований
+- Управление статусами
+- История бронирований
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### UI/UX
+- Адаптивный дизайн
+- Material Design компоненты
+- Современный интерфейс
+- Анимации и переходы
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Установка и запуск
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+1. Установите зависимости:
+```bash
+npm install
+```
 
-### `npm run eject`
+2. Создайте файл `.env`:
+```bash
+REACT_APP_API_URL=http://localhost:3000/api
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+3. Запустите сервер разработки:
+```bash
+npm start
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Приложение будет доступно по адресу http://localhost:3001
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Сборка для продакшена
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```bash
+npm run build
+```
 
-## Learn More
+## Тестирование
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+npm test
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Структура компонентов
 
-### Code Splitting
+### TourCard
+Переиспользуемый компонент карточки тура с поддержкой:
+- Отображения основной информации
+- Рейтинга и отзывов
+- Кнопок действий (просмотр/бронирование)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Layout
+Основной макет приложения с:
+- Шапкой с навигацией
+- Подвалом
+- Адаптивным дизайном
 
-### Analyzing the Bundle Size
+### ProtectedRoute
+Компонент для защиты маршрутов с:
+- Проверкой аутентификации
+- Проверкой ролей пользователя
+- Перенаправлением на страницу входа
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## API интеграция
 
-### Making a Progressive Web App
+Приложение интегрируется с бэкенд API через сервис `apiService`, который предоставляет методы для:
+- Аутентификации
+- Управления турами
+- Бронирований
+- Отзывов
+- Управления пользователями
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Состояние приложения
 
-### Advanced Configuration
+Глобальное состояние управляется через:
+- **AuthContext** - аутентификация пользователя
+- **React Router** - состояние маршрутизации
+- **Local State** - локальное состояние компонентов
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## Типизация
 
-### Deployment
+Все компоненты и API методы полностью типизированы с TypeScript для:
+- Безопасности типов
+- Лучшего DX
+- Автодополнения в IDE
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## Стилизация
 
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Используется Material-UI с кастомной темой:
+- Единообразный дизайн
+- Готовые компоненты
+- Адаптивность
+- Темизация

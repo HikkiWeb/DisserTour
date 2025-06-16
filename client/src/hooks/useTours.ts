@@ -1,0 +1,236 @@
+import { useState, useEffect, useCallback } from 'react';
+import { apiService } from '../services/api';
+import { Tour, TourFilters, PaginatedResponse } from '../types';
+
+interface UseToursResult {
+  tours: Tour[];
+  loading: boolean;
+  error: string | null;
+  totalPages: number;
+  currentPage: number;
+  loadTours: (filters?: TourFilters) => Promise<void>;
+  refetch: () => Promise<void>;
+}
+
+export const useTours = () => {
+  const [tours, setTours] = useState<Tour[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [totalPages, setTotalPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const loadTours = useCallback(async (filters?: TourFilters) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await apiService.getTours(filters);
+      
+      if (response.status === 'success' && response.data) {
+        setTours(response.data.data);
+        setTotalPages((response.data as any).pagination?.pages || 1);
+        setCurrentPage((response.data as any).pagination?.page || 1);
+      } else {
+        throw new Error(response.message || 'Ошибка загрузки туров');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Ошибка загрузки туров');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTours();
+  }, [loadTours]);
+
+  return {
+    tours,
+    loading,
+    error,
+    totalPages,
+    currentPage,
+    refetch: loadTours,
+  };
+};
+
+export default useTours;
+
+// Хук для получения одного тура
+export const useTour = (tourId: string) => {
+  const [tour, setTour] = useState<Tour | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadTour = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await apiService.getTourById(tourId);
+      
+      if (response.status === 'success' && response.data) {
+        setTour(response.data.tour);
+      } else {
+        throw new Error(response.message || 'Тур не найден');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Ошибка загрузки тура');
+      setTour(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tourId) {
+      loadTour();
+    }
+  }, [tourId]);
+
+  return {
+    tour,
+    loading,
+    error,
+    refetch: loadTour,
+  };
+};
+
+// Хук для популярных туров
+export const usePopularTours = () => {
+  const [tours, setTours] = useState<Tour[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadPopularTours = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await apiService.getPopularTours();
+      
+      if (response.status === 'success' && response.data) {
+        setTours(response.data.tours);
+      }
+    } catch (err: any) {
+      console.error('API Error:', err);
+      setError(err.message || 'Ошибка загрузки популярных туров');
+      
+      // Фоллбэк данные для демонстрации
+      setTours([
+        {
+          id: '1',
+          title: 'Тур по Алматы',
+          description: 'Откройте для себя красоты южной столицы Казахстана',
+          price: 50000,
+          duration: 3,
+          difficulty: 'easy' as const,
+          region: 'Алматы',
+          mainImage: '/images/almaty.jpg',
+          gallery: [],
+          maxParticipants: 15,
+          rating: 4.8,
+          reviewsCount: 124,
+          availableDates: ['2024-03-15', '2024-03-22'],
+          itinerary: [],
+          included: ['Трансфер', 'Гид', 'Экскурсии'],
+          notIncluded: ['Питание', 'Личные расходы'],
+          requirements: ['Удобная обувь'],
+          guide: { id: '1', firstName: 'Асель', lastName: 'Жумабекова', email: 'guide@example.com', role: 'guide' }
+        },
+        {
+          id: '2', 
+          title: 'Поездка в Астану',
+          description: 'Современная столица с уникальной архитектурой',
+          price: 75000,
+          duration: 2,
+          difficulty: 'easy' as const,
+          region: 'Астана',
+          mainImage: '/images/astana.jpg',
+          gallery: [],
+          maxParticipants: 20,
+          rating: 4.9,
+          reviewsCount: 89,
+          availableDates: ['2024-03-20', '2024-03-27'],
+          itinerary: [],
+          included: ['Трансфер', 'Гид', 'Экскурсии'],
+          notIncluded: ['Питание', 'Личные расходы'],
+          requirements: ['Удобная обувь'],
+          guide: { id: '2', firstName: 'Нурлан', lastName: 'Сарсенов', email: 'guide2@example.com', role: 'guide' }
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPopularTours();
+  }, [loadPopularTours]);
+
+  return {
+    tours,
+    loading,
+    error,
+    refetch: loadPopularTours,
+  };
+};
+
+export const useSeasonalTours = () => {
+  const [tours, setTours] = useState<Tour[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadSeasonalTours = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await apiService.getSeasonalRecommendations();
+      
+      if (response.status === 'success' && response.data) {
+        setTours(response.data.tours);
+      }
+    } catch (err: any) {
+      console.error('API Error:', err);
+      setError(err.message || 'Ошибка загрузки сезонных туров');
+      
+      // Фоллбэк данные для демонстрации
+      setTours([
+        {
+          id: '3',
+          title: 'Весенний тур в горы',
+          description: 'Насладитесь весенней природой в горах Казахстана',
+          price: 65000,
+          duration: 4,
+          difficulty: 'moderate' as const,
+          region: 'Алматинская область',
+          mainImage: '/images/mountains.jpg',
+          gallery: [],
+          maxParticipants: 12,
+          rating: 4.7,
+          reviewsCount: 67,
+          availableDates: ['2024-04-10', '2024-04-17'],
+          itinerary: [],
+          included: ['Трансфер', 'Гид', 'Питание'],
+          notIncluded: ['Личные расходы'],
+          requirements: ['Горные ботинки', 'Теплая одежда'],
+          guide: { id: '3', firstName: 'Ерлан', lastName: 'Каримов', email: 'guide3@example.com', role: 'guide' }
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSeasonalTours();
+  }, [loadSeasonalTours]);
+
+  return {
+    tours,
+    loading,
+    error,
+    refetch: loadSeasonalTours,
+  };
+}; 

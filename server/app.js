@@ -14,7 +14,14 @@ const app = express();
 
 // Middleware
 app.use(helmet()); // Безопасность
-app.use(cors()); // CORS
+
+// CORS настройки
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(compression()); // Сжатие ответов
 app.use(morgan('dev')); // Логирование
 app.use(express.json()); // Парсинг JSON
