@@ -834,15 +834,9 @@ router.get('/stats', authenticate, requireAdmin, async (req, res) => {
     const topTours = await Tour.findAll({
       attributes: [
         'id', 'title', 'price',
-        [Tour.sequelize.fn('COUNT', Tour.sequelize.col('bookings.id')), 'bookingCount']
+        [Tour.sequelize.literal('(SELECT COUNT(*) FROM "Bookings" WHERE "Bookings"."tourId" = "Tour"."id")'), 'bookingCount']
       ],
-      include: [{
-        model: Booking,
-        as: 'bookings',
-        attributes: []
-      }],
-      group: ['Tour.id'],
-      order: [[Tour.sequelize.fn('COUNT', Tour.sequelize.col('bookings.id')), 'DESC']],
+      order: [[Tour.sequelize.literal('(SELECT COUNT(*) FROM "Bookings" WHERE "Bookings"."tourId" = "Tour"."id")'), 'DESC']],
       limit: 5
     });
 

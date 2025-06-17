@@ -325,6 +325,10 @@ class ApiService {
     return this.request<any>('/admin/stats');
   }
 
+  async getGuideStats(): Promise<ApiResponse<any>> {
+    return this.request<any>('/guide/stats');
+  }
+
   // Админские CRUD операции
   // Пользователи
   async createUser(userData: {

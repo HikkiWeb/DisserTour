@@ -195,6 +195,18 @@ const DashboardPage: React.FC = () => {
     loadDashboardData();
   }, []);
 
+  // Пересчитываем статистику при изменении данных (только для дополнения данных гида)
+  useEffect(() => {
+    if (isGuide && bookings.length > 0) {
+      // Для гида дополняем статистику локальными расчетами
+      const pendingBookings = bookings.filter(b => b.status === 'pending').length;
+      setStats(prev => ({
+        ...prev,
+        pendingBookings,
+      }));
+    }
+  }, [bookings, isGuide]);
+
   const loadDashboardData = async () => {
     try {
       setLoading(true);
@@ -208,18 +220,20 @@ const DashboardPage: React.FC = () => {
           apiService.getAdminTours(),
           apiService.getAllBookings(),
           apiService.getAdminReviews(),
-          apiService.getGuides()
+          apiService.getGuides(),
+          apiService.getDashboardStats()
         );
       } else if (isGuide) {
         promises.push(
           apiService.getGuideTours(),
-          apiService.getGuideBookings()
+          apiService.getGuideBookings(),
+          apiService.getGuideStats()
         );
       }
 
       const responses = await Promise.all(promises);
 
-      if (isAdmin && responses.length >= 5) {
+      if (isAdmin && responses.length >= 6) {
         if (responses[0].status === 'success' && responses[0].data) {
           setUsers(responses[0].data.data || responses[0].data.users || []);
         }
@@ -235,45 +249,42 @@ const DashboardPage: React.FC = () => {
         if (responses[4].status === 'success' && responses[4].data) {
           setGuides(responses[4].data.guides || []);
         }
-      } else if (isGuide && responses.length >= 2) {
+        if (responses[5].status === 'success' && responses[5].data) {
+          const statsData = responses[5].data;
+          setStats({
+            totalBookings: statsData.overview?.totalBookings || 0,
+            totalRevenue: statsData.overview?.totalRevenue || 0,
+            activeUsers: statsData.overview?.verifiedUsers || 0,
+            activeTours: statsData.overview?.activeTours || 0,
+            pendingBookings: statsData.overview?.pendingBookings || 0,
+            monthlyRevenue: statsData.overview?.monthlyRevenue || 0,
+          });
+        }
+      } else if (isGuide && responses.length >= 3) {
         if (responses[0].status === 'success' && responses[0].data) {
           setTours(responses[0].data.data || responses[0].data.tours || []);
         }
         if (responses[1].status === 'success' && responses[1].data) {
           setBookings(responses[1].data.data || responses[1].data.bookings || []);
         }
+        if (responses[2].status === 'success' && responses[2].data) {
+          const statsData = responses[2].data;
+          setStats({
+            totalBookings: statsData.totalBookings || 0,
+            totalRevenue: statsData.totalRevenue || 0,
+            activeUsers: 0, // Для гида не показываем активных пользователей
+            activeTours: statsData.activeTours || 0,
+            pendingBookings: 0, // Будем рассчитывать локально
+            monthlyRevenue: 0, // Для гида пока не реализовано
+          });
+        }
       }
-
-      calculateStats();
     } catch (err: any) {
       console.error('Ошибка загрузки данных:', err);
       setError('Ошибка загрузки данных');
     } finally {
       setLoading(false);
     }
-  };
-
-  const calculateStats = () => {
-    const totalRevenue = bookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
-    const pendingBookings = bookings.filter(b => b.status === 'pending').length;
-    const activeTours = tours.filter(t => t.isActive !== false).length;
-    
-    // Подсчет месячного дохода (за последние 30 дней)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    const monthlyRevenue = bookings
-      .filter(b => new Date(b.createdAt || b.startDate) >= thirtyDaysAgo && b.status === 'confirmed')
-      .reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
-
-    setStats({
-      totalBookings: bookings.length,
-      totalRevenue,
-      activeUsers: users.filter(u => u.isVerified).length,
-      activeTours,
-      pendingBookings,
-      monthlyRevenue,
-    });
   };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
