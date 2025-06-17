@@ -17,7 +17,7 @@ const Tour = sequelize.define('Tour', {
   },
   shortDescription: {
     type: DataTypes.STRING(200),
-    allowNull: false,
+    allowNull: true,
   },
   price: {
     type: DataTypes.DECIMAL(10, 2),
@@ -30,14 +30,17 @@ const Tour = sequelize.define('Tour', {
   maxGroupSize: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    defaultValue: 10,
   },
   difficulty: {
     type: DataTypes.ENUM('easy', 'moderate', 'challenging', 'hard'),
     allowNull: false,
+    defaultValue: 'moderate',
   },
   category: {
     type: DataTypes.STRING,
     allowNull: false,
+    defaultValue: 'nature',
   },
   region: {
     type: DataTypes.STRING,
@@ -45,7 +48,8 @@ const Tour = sequelize.define('Tour', {
   },
   season: {
     type: DataTypes.ARRAY(DataTypes.STRING), // ['summer', 'winter', 'spring', 'autumn']
-    allowNull: false,
+    allowNull: true,
+    defaultValue: ['all'],
   },
   images: {
     type: DataTypes.ARRAY(DataTypes.STRING),
@@ -53,7 +57,8 @@ const Tour = sequelize.define('Tour', {
   },
   itinerary: {
     type: DataTypes.JSONB,
-    allowNull: false,
+    allowNull: true,
+    defaultValue: null,
   },
   included: {
     type: DataTypes.ARRAY(DataTypes.STRING),
@@ -81,7 +86,7 @@ const Tour = sequelize.define('Tour', {
   },
   guideId: {
     type: DataTypes.UUID,
-    allowNull: false,
+    allowNull: true,
     references: {
       model: 'Users',
       key: 'id',
@@ -89,7 +94,7 @@ const Tour = sequelize.define('Tour', {
   },
   startLocation: {
     type: DataTypes.JSONB,
-    allowNull: false,
+    allowNull: true,
   },
   locations: {
     type: DataTypes.ARRAY(DataTypes.JSONB),

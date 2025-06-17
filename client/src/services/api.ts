@@ -67,7 +67,7 @@ class ApiService {
       console.error('API request failed:', error);
       // Если это уже обработанная ошибка, передаем как есть
       if (error.response) {
-        throw error;
+      throw error;
       }
       // Иначе оборачиваем в стандартный формат
       throw {
@@ -318,6 +318,110 @@ class ApiService {
 
   async getDashboardStats(): Promise<ApiResponse<any>> {
     return this.request<any>('/admin/stats');
+  }
+
+  // Админские CRUD операции
+  // Пользователи
+  async createUser(userData: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    role?: string;
+    phone?: string;
+  }): Promise<ApiResponse<any>> {
+    return this.request<any>('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async updateUser(userId: string, userData: any): Promise<ApiResponse<any>> {
+    return this.request<any>(`/admin/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  // Туры
+  async getAdminTours(): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
+    return this.request<SimplePaginatedResponse<any>>('/admin/tours');
+  }
+
+  async createAdminTour(tourData: {
+    title: string;
+    description: string;
+    shortDescription?: string;
+    price: number;
+    duration: number;
+    maxGroupSize?: number;
+    difficulty?: string;
+    category?: string;
+    region: string;
+    season?: string;
+    guideId?: string;
+    startLocation?: string;
+    locations?: string[];
+    itinerary?: string[];
+    included?: string[];
+    excluded?: string[];
+    requirements?: string[];
+    tags?: string[];
+  }): Promise<ApiResponse<any>> {
+    return this.request<any>('/admin/tours', {
+      method: 'POST',
+      body: JSON.stringify(tourData),
+    });
+  }
+
+  async updateAdminTour(tourId: string, tourData: any): Promise<ApiResponse<any>> {
+    return this.request<any>(`/admin/tours/${tourId}`, {
+      method: 'PUT',
+      body: JSON.stringify(tourData),
+    });
+  }
+
+  async deleteAdminTour(tourId: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/admin/tours/${tourId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Бронирования
+  async updateBookingStatusAdmin(bookingId: string, status: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/admin/bookings/${bookingId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  async deleteBooking(bookingId: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/admin/bookings/${bookingId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Отзывы
+  async getAdminReviews(): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
+    return this.request<SimplePaginatedResponse<any>>('/admin/reviews');
+  }
+
+  async deleteAdminReview(reviewId: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/admin/reviews/${reviewId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async respondToReview(reviewId: string, response: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/admin/reviews/${reviewId}/response`, {
+      method: 'PUT',
+      body: JSON.stringify({ response }),
+    });
+  }
+
+  // Получить всех гидов для выпадающего списка
+  async getGuides(): Promise<ApiResponse<{ guides: any[] }>> {
+    return this.request<{ guides: any[] }>('/users?role=guide');
   }
 }
 

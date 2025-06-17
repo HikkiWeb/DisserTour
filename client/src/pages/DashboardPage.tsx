@@ -130,17 +130,56 @@ const DashboardPage: React.FC = () => {
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [tourDialogOpen, setTourDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
+  const [createTourDialogOpen, setCreateTourDialogOpen] = useState(false);
+  const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
+  const [editTourDialogOpen, setEditTourDialogOpen] = useState(false);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   
   // Выбранные элементы
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedTour, setSelectedTour] = useState<TourType | null>(null);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedReview, setSelectedReview] = useState<any>(null);
   
   // Состояния форм
   const [newStatus, setNewStatus] = useState('');
   const [newRole, setNewRole] = useState('');
   const [updating, setUpdating] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [guides, setGuides] = useState<User[]>([]);
+  
+  // Данные форм
+  const [userFormData, setUserFormData] = useState({
+    email: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+    role: 'user',
+    phone: '',
+  });
+  
+  const [tourFormData, setTourFormData] = useState({
+    title: '',
+    description: '',
+    shortDescription: '',
+    price: 0,
+    duration: 1,
+    maxGroupSize: 10,
+    difficulty: 'medium',
+    category: 'nature',
+    region: '',
+    season: 'all',
+    guideId: '',
+    startLocation: '',
+    locations: [] as string[],
+    itinerary: [] as string[],
+    included: [] as string[],
+    excluded: [] as string[],
+    requirements: [] as string[],
+    tags: [] as string[],
+  });
 
   const isAdmin = user?.role === 'admin';
   const isGuide = user?.role === 'guide';
@@ -159,8 +198,10 @@ const DashboardPage: React.FC = () => {
       if (isAdmin) {
         promises.push(
           apiService.getUsers(),
-          apiService.getTours({ page: 1, limit: 1000 }),
-          apiService.getAllBookings()
+          apiService.getAdminTours(),
+          apiService.getAllBookings(),
+          apiService.getAdminReviews(),
+          apiService.getGuides()
         );
       } else if (isGuide) {
         promises.push(
@@ -171,7 +212,7 @@ const DashboardPage: React.FC = () => {
 
       const responses = await Promise.all(promises);
 
-      if (isAdmin && responses.length >= 3) {
+      if (isAdmin && responses.length >= 5) {
         if (responses[0].status === 'success' && responses[0].data) {
           setUsers(responses[0].data.data || responses[0].data.users || []);
         }
@@ -180,6 +221,12 @@ const DashboardPage: React.FC = () => {
         }
         if (responses[2].status === 'success' && responses[2].data) {
           setBookings(responses[2].data.data || responses[2].data.bookings || []);
+        }
+        if (responses[3].status === 'success' && responses[3].data) {
+          setReviews(responses[3].data.data || responses[3].data.reviews || []);
+        }
+        if (responses[4].status === 'success' && responses[4].data) {
+          setGuides(responses[4].data.guides || []);
         }
       } else if (isGuide && responses.length >= 2) {
         if (responses[0].status === 'success' && responses[0].data) {
@@ -274,20 +321,30 @@ const DashboardPage: React.FC = () => {
 
     try {
       setUpdating(true);
+      setError('');
       
       if (selectedItem.type === 'user') {
-        // await apiService.deleteUser(selectedItem.id);
-        setSuccess('Пользователь удален');
+        const response = await apiService.deleteUser(selectedItem.id);
+        if (response.status === 'success') {
+          setSuccess('Пользователь успешно удален');
+        }
       } else if (selectedItem.type === 'tour') {
-        await apiService.deleteTour(selectedItem.id);
-        setSuccess('Тур удален');
+        const response = await apiService.deleteAdminTour(selectedItem.id);
+        if (response.status === 'success') {
+          setSuccess('Тур успешно удален');
+        }
+      } else if (selectedItem.type === 'booking') {
+        const response = await apiService.deleteBooking(selectedItem.id);
+        if (response.status === 'success') {
+          setSuccess('Бронирование успешно удалено');
+        }
       }
       
-      loadDashboardData();
       setDeleteDialogOpen(false);
       setSelectedItem(null);
+      loadDashboardData();
     } catch (err: any) {
-      setError('Ошибка при удалении');
+      setError(err.response?.data?.message || 'Ошибка при удалении');
     } finally {
       setUpdating(false);
     }
@@ -352,6 +409,191 @@ const DashboardPage: React.FC = () => {
       currency: 'KZT',
       minimumFractionDigits: 0,
     }).format(amount);
+  };
+
+  // CRUD функции
+  const handleCreateUser = async () => {
+    try {
+      setUpdating(true);
+      setError('');
+      
+      const response = await apiService.createUser(userFormData);
+      if (response.status === 'success') {
+        setSuccess('Пользователь успешно создан');
+        setCreateUserDialogOpen(false);
+        setUserFormData({
+          email: '',
+          password: '',
+          firstName: '',
+          lastName: '',
+          role: 'user',
+          phone: '',
+        });
+        loadDashboardData();
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Ошибка создания пользователя');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleEditUser = async () => {
+    if (!selectedUser) return;
+    
+    try {
+      setUpdating(true);
+      setError('');
+      
+      const response = await apiService.updateUser(selectedUser.id, userFormData);
+      if (response.status === 'success') {
+        setSuccess('Пользователь успешно обновлен');
+        setEditUserDialogOpen(false);
+        loadDashboardData();
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Ошибка обновления пользователя');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleCreateTour = async () => {
+    try {
+      setUpdating(true);
+      setError('');
+      
+      const response = await apiService.createAdminTour(tourFormData);
+      if (response.status === 'success') {
+        setSuccess('Тур успешно создан');
+        setCreateTourDialogOpen(false);
+        setTourFormData({
+          title: '',
+          description: '',
+          shortDescription: '',
+          price: 0,
+          duration: 1,
+          maxGroupSize: 10,
+          difficulty: 'moderate',
+          category: 'nature',
+          region: '',
+          season: 'all',
+          guideId: '',
+          startLocation: '',
+          locations: [],
+          itinerary: [],
+          included: [],
+          excluded: [],
+          requirements: [],
+          tags: [],
+        });
+        loadDashboardData();
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Ошибка создания тура');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleEditTour = async () => {
+    if (!selectedTour) return;
+    
+    try {
+      setUpdating(true);
+      setError('');
+      
+      console.log('=== CLIENT TOUR UPDATE ===');
+      console.log('Tour data being sent:', tourFormData);
+      console.log('========================');
+      
+      const response = await apiService.updateAdminTour(selectedTour.id, tourFormData);
+      if (response.status === 'success') {
+        setSuccess('Тур успешно обновлен');
+        setEditTourDialogOpen(false);
+        loadDashboardData();
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Ошибка обновления тура');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const openCreateUserDialog = () => {
+    setUserFormData({
+      email: '',
+      password: '',
+      firstName: '',
+      lastName: '',
+      role: 'user',
+      phone: '',
+    });
+    setCreateUserDialogOpen(true);
+  };
+
+  const openEditUserDialog = (user: User) => {
+    setSelectedUser(user);
+    setUserFormData({
+      email: user.email,
+      password: '',
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      phone: user.phone || '',
+    });
+    setEditUserDialogOpen(true);
+  };
+
+  const openCreateTourDialog = () => {
+    setTourFormData({
+      title: '',
+      description: '',
+      shortDescription: '',
+      price: 0,
+      duration: 1,
+      maxGroupSize: 10,
+      difficulty: 'moderate',
+      category: 'nature',
+      region: '',
+      season: 'all',
+      guideId: '',
+      startLocation: '',
+      locations: [],
+      itinerary: [],
+      included: [],
+      excluded: [],
+      requirements: [],
+      tags: [],
+    });
+    setCreateTourDialogOpen(true);
+  };
+
+  const openEditTourDialog = (tour: TourType) => {
+    setSelectedTour(tour);
+    setTourFormData({
+      title: tour.title,
+      description: tour.description,
+      shortDescription: '',
+      price: tour.price,
+      duration: tour.duration,
+      maxGroupSize: tour.maxParticipants || 10,
+      difficulty: tour.difficulty,
+      category: tour.category || 'nature',
+      region: tour.region,
+      season: 'all',
+      guideId: tour.guide?.id || '',
+      startLocation: '',
+      locations: [],
+      itinerary: tour.itinerary ? tour.itinerary.map(item => 
+        typeof item === 'string' ? item : `День ${item.day}: ${item.title || ''} - ${item.description || ''}`
+      ) : [],
+      included: tour.included || [],
+      excluded: tour.notIncluded || [],
+      requirements: tour.requirements || [],
+      tags: [],
+    });
+    setEditTourDialogOpen(true);
   };
 
   // Фильтрация данных
@@ -607,6 +849,17 @@ const DashboardPage: React.FC = () => {
                           <Edit />
                         </IconButton>
                       </Tooltip>
+                      {isAdmin && (
+                        <Tooltip title="Удалить">
+                          <IconButton 
+                            size="small" 
+                            color="error"
+                            onClick={() => openDeleteDialog(booking, 'booking')}
+                          >
+                            <Delete />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -642,9 +895,15 @@ const DashboardPage: React.FC = () => {
               }}
               sx={{ minWidth: 200 }}
             />
-            <Button variant="contained" startIcon={<Add />}>
-              Добавить тур
-            </Button>
+            {isAdmin && (
+              <Button 
+                variant="contained" 
+                startIcon={<Add />}
+                onClick={openCreateTourDialog}
+              >
+                Добавить тур
+              </Button>
+            )}
           </Box>
 
           <TableContainer>
@@ -716,7 +975,10 @@ const DashboardPage: React.FC = () => {
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Редактировать">
-                        <IconButton size="small">
+                        <IconButton 
+                          size="small"
+                          onClick={() => openEditTourDialog(tour)}
+                        >
                           <Edit />
                         </IconButton>
                       </Tooltip>
@@ -780,6 +1042,13 @@ const DashboardPage: React.FC = () => {
                   <MenuItem value="admin">Администраторы</MenuItem>
                 </Select>
               </FormControl>
+              <Button 
+                variant="contained" 
+                startIcon={<Add />}
+                onClick={openCreateUserDialog}
+              >
+                Добавить пользователя
+              </Button>
             </Box>
 
             <TableContainer>
@@ -866,12 +1135,21 @@ const DashboardPage: React.FC = () => {
                         {new Date(user.createdAt || user.id).toLocaleDateString('ru-RU')}
                       </TableCell>
                       <TableCell>
+                        <Tooltip title="Редактировать">
+                          <IconButton 
+                            size="small"
+                            onClick={() => openEditUserDialog(user)}
+                          >
+                            <Edit />
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title="Изменить роль">
                           <IconButton 
                             size="small"
                             onClick={() => openUserDialog(user)}
+                            color="warning"
                           >
-                            <Edit />
+                            <AdminPanelSettings />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Удалить">
@@ -879,7 +1157,7 @@ const DashboardPage: React.FC = () => {
                             size="small" 
                             color="error"
                             onClick={() => openDeleteDialog(user, 'user')}
-                            disabled={user.id === user?.id} // Нельзя удалить себя
+                            disabled={false} // Админ может удалить любого пользователя
                           >
                             <Delete />
                           </IconButton>
@@ -978,7 +1256,9 @@ const DashboardPage: React.FC = () => {
         <DialogContent>
           <Typography>
             Вы уверены, что хотите удалить{' '}
-            {selectedItem?.type === 'user' ? 'пользователя' : 'тур'}?
+            {selectedItem?.type === 'user' ? 'пользователя' : 
+             selectedItem?.type === 'tour' ? 'тур' : 
+             selectedItem?.type === 'booking' ? 'бронирование' : 'элемент'}?
           </Typography>
           <Typography variant="body2" color="error" sx={{ mt: 1 }}>
             Это действие нельзя отменить.
@@ -993,6 +1273,360 @@ const DashboardPage: React.FC = () => {
             disabled={updating}
           >
             {updating ? <CircularProgress size={20} /> : 'Удалить'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог создания пользователя */}
+      <Dialog open={createUserDialogOpen} onClose={() => setCreateUserDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Создать пользователя</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              label="Имя"
+              value={userFormData.firstName}
+              onChange={(e) => setUserFormData({...userFormData, firstName: e.target.value})}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Фамилия"
+              value={userFormData.lastName}
+              onChange={(e) => setUserFormData({...userFormData, lastName: e.target.value})}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Email"
+              type="email"
+              value={userFormData.email}
+              onChange={(e) => setUserFormData({...userFormData, email: e.target.value})}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Пароль"
+              type="password"
+              value={userFormData.password}
+              onChange={(e) => setUserFormData({...userFormData, password: e.target.value})}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Телефон"
+              value={userFormData.phone}
+              onChange={(e) => setUserFormData({...userFormData, phone: e.target.value})}
+              fullWidth
+            />
+            <FormControl fullWidth>
+              <InputLabel>Роль</InputLabel>
+              <Select
+                value={userFormData.role}
+                label="Роль"
+                onChange={(e) => setUserFormData({...userFormData, role: e.target.value})}
+              >
+                <MenuItem value="user">Пользователь</MenuItem>
+                <MenuItem value="guide">Гид</MenuItem>
+                <MenuItem value="admin">Администратор</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateUserDialogOpen(false)}>Отмена</Button>
+          <Button 
+            onClick={handleCreateUser} 
+            variant="contained"
+            disabled={updating || !userFormData.firstName || !userFormData.lastName || !userFormData.email || !userFormData.password}
+          >
+            {updating ? <CircularProgress size={20} /> : 'Создать'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог редактирования пользователя */}
+      <Dialog open={editUserDialogOpen} onClose={() => setEditUserDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Редактировать пользователя</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              label="Имя"
+              value={userFormData.firstName}
+              onChange={(e) => setUserFormData({...userFormData, firstName: e.target.value})}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Фамилия"
+              value={userFormData.lastName}
+              onChange={(e) => setUserFormData({...userFormData, lastName: e.target.value})}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Email"
+              type="email"
+              value={userFormData.email}
+              onChange={(e) => setUserFormData({...userFormData, email: e.target.value})}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Телефон"
+              value={userFormData.phone}
+              onChange={(e) => setUserFormData({...userFormData, phone: e.target.value})}
+              fullWidth
+            />
+            <FormControl fullWidth>
+              <InputLabel>Роль</InputLabel>
+              <Select
+                value={userFormData.role}
+                label="Роль"
+                onChange={(e) => setUserFormData({...userFormData, role: e.target.value})}
+              >
+                <MenuItem value="user">Пользователь</MenuItem>
+                <MenuItem value="guide">Гид</MenuItem>
+                <MenuItem value="admin">Администратор</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditUserDialogOpen(false)}>Отмена</Button>
+          <Button 
+            onClick={handleEditUser} 
+            variant="contained"
+            disabled={updating || !userFormData.firstName || !userFormData.lastName || !userFormData.email}
+          >
+            {updating ? <CircularProgress size={20} /> : 'Сохранить'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог создания тура */}
+      <Dialog open={createTourDialogOpen} onClose={() => setCreateTourDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Создать тур</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              label="Название тура"
+              value={tourFormData.title}
+              onChange={(e) => setTourFormData({...tourFormData, title: e.target.value})}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Описание"
+              value={tourFormData.description}
+              onChange={(e) => setTourFormData({...tourFormData, description: e.target.value})}
+              fullWidth
+              multiline
+              rows={3}
+              required
+            />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                label="Цена (KZT)"
+                type="number"
+                value={tourFormData.price}
+                onChange={(e) => setTourFormData({...tourFormData, price: Number(e.target.value)})}
+                fullWidth
+                required
+              />
+              <TextField
+                label="Длительность (дни)"
+                type="number"
+                value={tourFormData.duration}
+                onChange={(e) => setTourFormData({...tourFormData, duration: Number(e.target.value)})}
+                fullWidth
+                required
+              />
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                label="Регион"
+                value={tourFormData.region}
+                onChange={(e) => setTourFormData({...tourFormData, region: e.target.value})}
+                fullWidth
+                required
+              />
+              <TextField
+                label="Максимум участников"
+                type="number"
+                value={tourFormData.maxGroupSize}
+                onChange={(e) => setTourFormData({...tourFormData, maxGroupSize: Number(e.target.value)})}
+                fullWidth
+              />
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <FormControl fullWidth>
+                <InputLabel>Сложность</InputLabel>
+                <Select
+                  value={tourFormData.difficulty}
+                  label="Сложность"
+                  onChange={(e) => setTourFormData({...tourFormData, difficulty: e.target.value})}
+                >
+                  <MenuItem value="easy">Легкий</MenuItem>
+                  <MenuItem value="moderate">Умеренный</MenuItem>
+                  <MenuItem value="challenging">Сложный</MenuItem>
+                  <MenuItem value="hard">Очень сложный</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <InputLabel>Категория</InputLabel>
+                <Select
+                  value={tourFormData.category}
+                  label="Категория"
+                  onChange={(e) => setTourFormData({...tourFormData, category: e.target.value})}
+                >
+                  <MenuItem value="nature">Природа</MenuItem>
+                  <MenuItem value="culture">Культура</MenuItem>
+                  <MenuItem value="adventure">Приключения</MenuItem>
+                  <MenuItem value="history">История</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            {guides.length > 0 && (
+              <FormControl fullWidth>
+                <InputLabel>Гид</InputLabel>
+                <Select
+                  value={tourFormData.guideId}
+                  label="Гид"
+                  onChange={(e) => setTourFormData({...tourFormData, guideId: e.target.value})}
+                >
+                  <MenuItem value="">Без гида</MenuItem>
+                  {guides.map((guide) => (
+                    <MenuItem key={guide.id} value={guide.id}>
+                      {guide.firstName} {guide.lastName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateTourDialogOpen(false)}>Отмена</Button>
+          <Button 
+            onClick={handleCreateTour} 
+            variant="contained"
+            disabled={updating || !tourFormData.title || !tourFormData.description || !tourFormData.price || !tourFormData.region}
+          >
+            {updating ? <CircularProgress size={20} /> : 'Создать'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог редактирования тура */}
+      <Dialog open={editTourDialogOpen} onClose={() => setEditTourDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Редактировать тур</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              label="Название тура"
+              value={tourFormData.title}
+              onChange={(e) => setTourFormData({...tourFormData, title: e.target.value})}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Описание"
+              value={tourFormData.description}
+              onChange={(e) => setTourFormData({...tourFormData, description: e.target.value})}
+              fullWidth
+              multiline
+              rows={3}
+              required
+            />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                label="Цена (KZT)"
+                type="number"
+                value={tourFormData.price}
+                onChange={(e) => setTourFormData({...tourFormData, price: Number(e.target.value)})}
+                fullWidth
+                required
+              />
+              <TextField
+                label="Длительность (дни)"
+                type="number"
+                value={tourFormData.duration}
+                onChange={(e) => setTourFormData({...tourFormData, duration: Number(e.target.value)})}
+                fullWidth
+                required
+              />
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                label="Регион"
+                value={tourFormData.region}
+                onChange={(e) => setTourFormData({...tourFormData, region: e.target.value})}
+                fullWidth
+                required
+              />
+              <TextField
+                label="Максимум участников"
+                type="number"
+                value={tourFormData.maxGroupSize}
+                onChange={(e) => setTourFormData({...tourFormData, maxGroupSize: Number(e.target.value)})}
+                fullWidth
+              />
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <FormControl fullWidth>
+                <InputLabel>Сложность</InputLabel>
+                <Select
+                  value={tourFormData.difficulty}
+                  label="Сложность"
+                  onChange={(e) => setTourFormData({...tourFormData, difficulty: e.target.value})}
+                >
+                  <MenuItem value="easy">Легкий</MenuItem>
+                  <MenuItem value="moderate">Умеренный</MenuItem>
+                  <MenuItem value="challenging">Сложный</MenuItem>
+                  <MenuItem value="hard">Очень сложный</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <InputLabel>Категория</InputLabel>
+                <Select
+                  value={tourFormData.category}
+                  label="Категория"
+                  onChange={(e) => setTourFormData({...tourFormData, category: e.target.value})}
+                >
+                  <MenuItem value="nature">Природа</MenuItem>
+                  <MenuItem value="culture">Культура</MenuItem>
+                  <MenuItem value="adventure">Приключения</MenuItem>
+                  <MenuItem value="history">История</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            {guides.length > 0 && (
+              <FormControl fullWidth>
+                <InputLabel>Гид</InputLabel>
+                <Select
+                  value={tourFormData.guideId}
+                  label="Гид"
+                  onChange={(e) => setTourFormData({...tourFormData, guideId: e.target.value})}
+                >
+                  <MenuItem value="">Без гида</MenuItem>
+                  {guides.map((guide) => (
+                    <MenuItem key={guide.id} value={guide.id}>
+                      {guide.firstName} {guide.lastName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditTourDialogOpen(false)}>Отмена</Button>
+          <Button 
+            onClick={handleEditTour} 
+            variant="contained"
+            disabled={updating || !tourFormData.title || !tourFormData.description || !tourFormData.price || !tourFormData.region}
+          >
+            {updating ? <CircularProgress size={20} /> : 'Сохранить'}
           </Button>
         </DialogActions>
       </Dialog>
