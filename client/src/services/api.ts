@@ -196,7 +196,7 @@ class ApiService {
 
   async updateBookingStatus(bookingId: string, status: string): Promise<ApiResponse<any>> {
     return this.request<any>(`/bookings/${bookingId}/status`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify({ status }),
     });
   }

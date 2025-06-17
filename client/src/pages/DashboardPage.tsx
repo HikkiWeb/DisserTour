@@ -65,10 +65,12 @@ import {
   AdminPanelSettings,
   SupervisorAccount,
   Verified,
+  Badge as BadgeIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
 import { Booking, Tour as TourType, User } from '../types';
+import { getDifficultyText, getCategoryText, getRoleText, getStatusText } from '../utils/translations';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -279,7 +281,7 @@ const DashboardPage: React.FC = () => {
 
     try {
       setUpdating(true);
-      const response = await apiService.updateBookingStatus(selectedBooking.id, newStatus);
+      const response = await apiService.updateBookingStatusAdmin(selectedBooking.id, newStatus);
       
       if (response.status === 'success') {
         setSuccess('Статус бронирования обновлен');
@@ -378,28 +380,11 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'confirmed': return 'Подтверждено';
-      case 'pending': return 'Ожидает';
-      case 'cancelled': return 'Отменено';
-      default: return status;
-    }
-  };
-
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'admin': return <AdminPanelSettings color="error" />;
       case 'guide': return <SupervisorAccount color="warning" />;
       default: return <Person color="action" />;
-    }
-  };
-
-  const getRoleText = (role: string) => {
-    switch (role) {
-      case 'admin': return 'Администратор';
-      case 'guide': return 'Гид';
-      default: return 'Пользователь';
     }
   };
 
@@ -502,10 +487,6 @@ const DashboardPage: React.FC = () => {
     try {
       setUpdating(true);
       setError('');
-      
-      console.log('=== CLIENT TOUR UPDATE ===');
-      console.log('Tour data being sent:', tourFormData);
-      console.log('========================');
       
       const response = await apiService.updateAdminTour(selectedTour.id, tourFormData);
       if (response.status === 'success') {
@@ -914,6 +895,7 @@ const DashboardPage: React.FC = () => {
                   <TableCell>Регион</TableCell>
                   <TableCell>Цена</TableCell>
                   <TableCell>Длительность</TableCell>
+                  <TableCell>Сложность</TableCell>
                   <TableCell>Рейтинг</TableCell>
                   <TableCell>Статус</TableCell>
                   <TableCell>Действия</TableCell>
@@ -935,7 +917,7 @@ const DashboardPage: React.FC = () => {
                             {tour.title}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {tour.category}
+                            {getCategoryText(tour.category || '')}
                           </Typography>
                         </Box>
                       </Box>
@@ -952,6 +934,14 @@ const DashboardPage: React.FC = () => {
                       </Typography>
                     </TableCell>
                     <TableCell>{tour.duration} дней</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={getDifficultyText(tour.difficulty)}
+                        color="primary"
+                        variant="outlined"
+                        size="small"
+                      />
+                    </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Star sx={{ mr: 1, fontSize: 16, color: 'warning.main' }} />
@@ -1467,7 +1457,7 @@ const DashboardPage: React.FC = () => {
                   onChange={(e) => setTourFormData({...tourFormData, difficulty: e.target.value})}
                 >
                   <MenuItem value="easy">Легкий</MenuItem>
-                  <MenuItem value="moderate">Умеренный</MenuItem>
+                  <MenuItem value="moderate">Средний</MenuItem>
                   <MenuItem value="challenging">Сложный</MenuItem>
                   <MenuItem value="hard">Очень сложный</MenuItem>
                 </Select>
@@ -1581,7 +1571,7 @@ const DashboardPage: React.FC = () => {
                   onChange={(e) => setTourFormData({...tourFormData, difficulty: e.target.value})}
                 >
                   <MenuItem value="easy">Легкий</MenuItem>
-                  <MenuItem value="moderate">Умеренный</MenuItem>
+                  <MenuItem value="moderate">Средний</MenuItem>
                   <MenuItem value="challenging">Сложный</MenuItem>
                   <MenuItem value="hard">Очень сложный</MenuItem>
                 </Select>

@@ -12,6 +12,7 @@ import {
 import { LocationOn, AccessTime, People } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { Tour } from '../types';
+import { getDifficultyText, getDifficultyColor } from '../utils/translations';
 
 interface TourCardProps {
   tour: Tour;
@@ -22,36 +23,6 @@ const TourCard: React.FC<TourCardProps> = ({ tour }) => {
 
   const handleClick = () => {
     navigate(`/tours/${tour.id}`);
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy':
-        return 'success';
-      case 'moderate':
-        return 'info';
-      case 'challenging':
-        return 'warning';
-      case 'hard':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
-
-  const getDifficultyLabel = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy':
-        return 'Легкий';
-      case 'moderate':
-        return 'Средний';
-      case 'challenging':
-        return 'Сложный';
-      case 'hard':
-        return 'Очень сложный';
-      default:
-        return difficulty;
-    }
   };
 
   return (
@@ -80,7 +51,7 @@ const TourCard: React.FC<TourCardProps> = ({ tour }) => {
       <CardContent sx={{ flexGrow: 1 }}>
         <Box sx={{ mb: 1 }}>
           <Chip
-            label={getDifficultyLabel(tour.difficulty)}
+            label={getDifficultyText(tour.difficulty)}
             color={getDifficultyColor(tour.difficulty) as any}
             size="small"
             sx={{ mr: 1 }}

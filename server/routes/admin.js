@@ -388,11 +388,6 @@ router.put('/tours/:id', authenticate, requireAdmin, async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
     
-    console.log('=== SERVER TOUR UPDATE ===');
-    console.log('Received data:', JSON.stringify(updateData, null, 2));
-    console.log('========================');
-
-
     const tour = await Tour.findByPk(id);
     if (!tour) {
       return res.status(404).json({
@@ -515,8 +510,6 @@ router.put('/tours/:id', authenticate, requireAdmin, async (req, res) => {
         }
       }
     });
-    
-
     
     await tour.update(cleanedData);
 
