@@ -6,6 +6,10 @@ export interface User {
   email: string;
   role: 'user' | 'guide' | 'admin';
   avatar?: string;
+  phone?: string;
+  isVerified?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Тур
@@ -57,19 +61,25 @@ export interface Booking {
   tourId: string;
   userId: string;
   startDate: string;
+  endDate?: string;
   participants: number;
   totalPrice: number;
   status: 'pending' | 'confirmed' | 'cancelled';
   specialRequests?: string;
   createdAt: string;
+  updatedAt?: string;
+  tour?: Tour;
+  user?: User;
 }
 
 // Отзыв
 export interface Review {
   id: string;
   tourId: string;
+  userId?: string;
   user: User;
   rating: number;
+  title?: string;
   comment: string;
   createdAt: string;
 }

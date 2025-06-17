@@ -3,6 +3,7 @@ const router = express.Router();
 const AuthController = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 const { authValidation } = require('../middleware/validation');
+const { upload, handleUploadError } = require('../middleware/upload');
 
 // Регистрация нового пользователя
 router.post('/register', authValidation.register, AuthController.register);
@@ -23,10 +24,10 @@ router.post('/reset-password', authValidation.resetPassword, AuthController.rese
 router.get('/me', authenticate, AuthController.getCurrentUser);
 
 // Обновление профиля
-router.patch(
-  '/me',
+router.put(
+  '/profile',
   authenticate,
-  authValidation.register,
+  authValidation.updateProfile,
   AuthController.updateProfile
 );
 
@@ -34,8 +35,25 @@ router.patch(
 router.post(
   '/change-password',
   authenticate,
-  authValidation.login,
+  authValidation.changePassword,
   AuthController.changePassword
 );
+
+// Загрузка аватара
+router.post(
+  '/upload-avatar',
+  authenticate,
+  (req, res, next) => {
+    // Устанавливаем тип для middleware загрузки
+    req.params.type = 'avatars';
+    next();
+  },
+  upload.single('avatar'),
+  handleUploadError,
+  AuthController.uploadAvatar
+);
+
+// Получение статистики пользователя
+router.get('/stats', authenticate, AuthController.getUserStats);
 
 module.exports = router; 

@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { User } = require('../models');
 const { Op } = require('sequelize');
+const sequelize = require('../config/database');
 const config = require('../config/config');
 const { sendEmail } = require('../services/emailService');
 
@@ -244,6 +245,13 @@ class AuthController {
         attributes: { exclude: ['password', 'verificationToken', 'resetPasswordToken', 'resetPasswordExpires'] },
       });
 
+      if (!user) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Пользователь не найден',
+        });
+      }
+
       res.json({
         status: 'success',
         data: { user },
@@ -256,12 +264,20 @@ class AuthController {
   // Обновление профиля пользователя
   static async updateProfile(req, res, next) {
     try {
-      const { firstName, lastName, phone } = req.body;
+      const { firstName, lastName, phone, email } = req.body;
       const user = await User.findByPk(req.user.id);
 
-      if (firstName) user.firstName = firstName;
-      if (lastName) user.lastName = lastName;
-      if (phone) user.phone = phone;
+      if (!user) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Пользователь не найден',
+        });
+      }
+
+      if (firstName !== undefined) user.firstName = firstName;
+      if (lastName !== undefined) user.lastName = lastName;
+      if (phone !== undefined) user.phone = phone;
+      if (email !== undefined) user.email = email;
 
       await user.save();
 
@@ -275,8 +291,12 @@ class AuthController {
             lastName: user.lastName,
             phone: user.phone,
             role: user.role,
+            avatar: user.avatar,
+            isVerified: user.isVerified,
+            createdAt: user.createdAt,
           },
         },
+        message: 'Профиль успешно обновлен',
       });
     } catch (error) {
       next(error);
@@ -303,6 +323,98 @@ class AuthController {
       res.json({
         status: 'success',
         message: 'Пароль успешно изменен',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Загрузка аватара
+  static async uploadAvatar(req, res, next) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Файл не загружен',
+        });
+      }
+
+      const user = await User.findByPk(req.user.id);
+      
+      // Удаляем старый аватар если он есть
+      if (user.avatar) {
+        const { deleteFile } = require('../middleware/upload');
+        deleteFile(user.avatar);
+      }
+
+      // Сохраняем путь к новому аватару
+      const avatarPath = `avatars/${req.file.filename}`;
+      user.avatar = avatarPath;
+      await user.save();
+
+      res.json({
+        status: 'success',
+        data: {
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            phone: user.phone,
+            role: user.role,
+            avatar: user.avatar,
+          },
+        },
+        message: 'Аватар успешно загружен',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Получение статистики пользователя
+  static async getUserStats(req, res, next) {
+    try {
+      const userId = req.user.id;
+
+      // Получаем статистику бронирований
+      const { Booking } = require('../models');
+      const bookingStats = await Booking.findAll({
+        where: { userId },
+        attributes: [
+          'status',
+          [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+        ],
+        group: ['status'],
+        raw: true
+      });
+
+      // Получаем статистику отзывов
+      const { Review } = require('../models');
+      const reviewStats = await Review.findAll({
+        where: { userId },
+        attributes: [
+          [sequelize.fn('COUNT', sequelize.col('id')), 'totalReviews'],
+          [sequelize.fn('AVG', sequelize.col('rating')), 'averageRating']
+        ],
+        raw: true
+      });
+
+      // Получаем общую потраченную сумму
+      const totalSpent = await Booking.sum('totalPrice', {
+        where: { 
+          userId,
+          status: 'confirmed'
+        }
+      });
+
+      res.json({
+        status: 'success',
+        data: {
+          bookings: bookingStats,
+          reviews: reviewStats[0] || { totalReviews: 0, averageRating: 0 },
+          totalSpent: totalSpent || 0
+        }
       });
     } catch (error) {
       next(error);

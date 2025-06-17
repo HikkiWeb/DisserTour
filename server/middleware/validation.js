@@ -65,6 +65,36 @@ const authValidation = {
       .withMessage('Новый пароль должен содержать минимум 6 символов'),
     handleValidationErrors,
   ],
+  updateProfile: [
+    body('firstName')
+      .optional()
+      .trim()
+      .isLength({ min: 2 })
+      .withMessage('Имя должно содержать минимум 2 символа'),
+    body('lastName')
+      .optional()
+      .trim()
+      .isLength({ min: 2 })
+      .withMessage('Фамилия должна содержать минимум 2 символа'),
+    body('phone')
+      .optional()
+      .trim(),
+    body('email')
+      .optional()
+      .isEmail()
+      .withMessage('Введите корректный email адрес')
+      .normalizeEmail(),
+    handleValidationErrors,
+  ],
+  changePassword: [
+    body('currentPassword')
+      .notEmpty()
+      .withMessage('Введите текущий пароль'),
+    body('newPassword')
+      .isLength({ min: 6 })
+      .withMessage('Новый пароль должен содержать минимум 6 символов'),
+    handleValidationErrors,
+  ],
 };
 
 // Валидация для туров

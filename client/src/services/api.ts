@@ -224,13 +224,17 @@ class ApiService {
     newPassword: string;
   }): Promise<ApiResponse<any>> {
     return this.request<any>('/auth/change-password', {
-      method: 'PUT',
+      method: 'POST',
       body: JSON.stringify(passwordData),
     });
   }
 
   async getMyReviews(): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
     return this.request<SimplePaginatedResponse<any>>('/reviews/my');
+  }
+
+  async getUserStats(): Promise<ApiResponse<any>> {
+    return this.request<any>('/auth/stats');
   }
 
   // Admin/Guide Methods

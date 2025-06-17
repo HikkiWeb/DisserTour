@@ -16,14 +16,19 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Card,
+  CardContent,
+  IconButton,
+  Chip,
+  Divider,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
-  Chip,
-  Card,
-  CardContent,
-  IconButton,
+  InputAdornment,
+  LinearProgress,
+  Badge,
+  Tooltip,
 } from '@mui/material';
 import {
   Person,
@@ -35,8 +40,18 @@ import {
   Lock,
   PhotoCamera,
   Tour,
-  BookmarkBorder,
   Star,
+  TrendingUp,
+  Assessment,
+  History,
+  Verified,
+  Visibility,
+  VisibilityOff,
+  LocationOn,
+  CalendarToday,
+  AttachMoney,
+  RateReview,
+  EmojiEvents,
 } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -89,8 +104,12 @@ const ProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [myReviews, setMyReviews] = useState<Review[]>([]);
+  const [userStats, setUserStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(false);
 
   const {
@@ -117,6 +136,7 @@ const ProfilePage: React.FC = () => {
       setProfileValue('firstName', user.firstName);
       setProfileValue('lastName', user.lastName);
       setProfileValue('email', user.email);
+      setProfileValue('phone', user.phone || '');
     }
   }, [user, setProfileValue]);
 
@@ -125,6 +145,8 @@ const ProfilePage: React.FC = () => {
       loadBookings();
     } else if (tabValue === 2) {
       loadReviews();
+    } else if (tabValue === 3) {
+      loadUserStats();
     }
   }, [tabValue]);
 
@@ -156,6 +178,20 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  const loadUserStats = async () => {
+    try {
+      setStatsLoading(true);
+      const response = await apiService.getUserStats();
+      if (response.status === 'success' && response.data) {
+        setUserStats(response.data);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки статистики:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
@@ -172,6 +208,7 @@ const ProfilePage: React.FC = () => {
       setProfileValue('firstName', user.firstName);
       setProfileValue('lastName', user.lastName);
       setProfileValue('email', user.email);
+      setProfileValue('phone', user.phone || '');
     }
   };
 
@@ -185,13 +222,18 @@ const ProfilePage: React.FC = () => {
       if (response.status === 'success' && response.data) {
         updateUser(response.data.user);
         setEditing(false);
-        setMessage({ type: 'success', text: 'Профиль успешно обновлен!' });
+        setMessage({ type: 'success', text: response.message || 'Профиль успешно обновлен!' });
       }
     } catch (error: any) {
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.message || 'Ошибка при обновлении профиля' 
-      });
+      let errorMessage = 'Ошибка при обновлении профиля';
+      
+      if (error.response?.data?.errors) {
+        errorMessage = error.response.data.errors.map((err: any) => err.message).join(', ');
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -267,17 +309,25 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('ru-KZ', {
+      style: 'currency',
+      currency: 'KZT',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
   if (!user) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="error">Пользователь не найден</Alert>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
         Мой профиль
       </Typography>
 
@@ -287,180 +337,295 @@ const ProfilePage: React.FC = () => {
         </Alert>
       )}
 
-      <Paper sx={{ mb: 3 }}>
+      {/* Заголовок профиля */}
+      <Paper elevation={2} sx={{ mb: 3, p: 3, borderRadius: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <Box sx={{ position: 'relative' }}>
+            <Badge
+              overlap="circular"
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              badgeContent={
+                user.isVerified ? (
+                  <Tooltip title="Подтвержденный аккаунт">
+                    <Verified sx={{ color: 'success.main', fontSize: 20 }} />
+                  </Tooltip>
+                ) : null
+              }
+            >
+              <Avatar
+                src={user?.avatar ? `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/${user.avatar}` : undefined}
+                sx={{ 
+                  width: 100, 
+                  height: 100,
+                  fontSize: '2rem',
+                  bgcolor: 'primary.main'
+                }}
+              >
+                {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+              </Avatar>
+            </Badge>
+            <IconButton
+              component="label"
+              sx={{
+                position: 'absolute',
+                bottom: -5,
+                right: -5,
+                backgroundColor: 'primary.main',
+                color: 'white',
+                width: 35,
+                height: 35,
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+              }}
+            >
+              <PhotoCamera fontSize="small" />
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={handleAvatarUpload}
+              />
+            </IconButton>
+          </Box>
+
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+              {user?.firstName} {user?.lastName}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Email fontSize="small" color="action" />
+              <Typography variant="body2" color="text.secondary">
+                {user?.email}
+              </Typography>
+            </Box>
+            {user?.phone && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Phone fontSize="small" color="action" />
+                <Typography variant="body2" color="text.secondary">
+                  {user.phone}
+                </Typography>
+              </Box>
+            )}
+            <Chip
+              label={user?.role === 'admin' ? 'Администратор' : user?.role === 'guide' ? 'Гид' : 'Пользователь'}
+              color={user?.role === 'admin' ? 'error' : user?.role === 'guide' ? 'warning' : 'default'}
+              size="small"
+              sx={{ mt: 1 }}
+            />
+          </Box>
+        </Box>
+      </Paper>
+
+      <Paper elevation={2} sx={{ borderRadius: 3 }}>
         <Tabs 
           value={tabValue} 
           onChange={handleTabChange}
           variant="fullWidth"
+          sx={{ borderBottom: 1, borderColor: 'divider' }}
         >
-          <Tab label="Основная информация" />
-          <Tab label="Мои бронирования" />
-          <Tab label="Мои отзывы" />
+          <Tab 
+            icon={<Person />} 
+            label="Основная информация" 
+            iconPosition="start"
+          />
+          <Tab 
+            icon={<Tour />} 
+            label="Мои бронирования" 
+            iconPosition="start"
+          />
+          <Tab 
+            icon={<RateReview />} 
+            label="Мои отзывы" 
+            iconPosition="start"
+          />
+          <Tab 
+            icon={<Assessment />} 
+            label="Статистика" 
+            iconPosition="start"
+          />
         </Tabs>
 
+        {/* Основная информация */}
         <TabPanel value={tabValue} index={0}>
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
-            <Box sx={{ flex: '0 0 auto', width: { xs: '100%', md: '300px' } }}>
-              <Box sx={{ textAlign: 'center' }}>
-                <Box sx={{ position: 'relative', display: 'inline-block' }}>
-                  <Avatar
-                    src={user?.avatar}
-                    sx={{ width: 120, height: 120, mb: 2, mx: 'auto' }}
-                  >
-                    {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
-                  </Avatar>
-                  <IconButton
-                    component="label"
-                    sx={{
-                      position: 'absolute',
-                      bottom: 16,
-                      right: -8,
-                      backgroundColor: 'primary.main',
-                      color: 'white',
-                      '&:hover': {
-                        backgroundColor: 'primary.dark',
-                      },
-                    }}
-                  >
-                    <PhotoCamera />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      hidden
-                      onChange={handleAvatarUpload}
-                    />
-                  </IconButton>
-                </Box>
-                <Typography variant="h5" gutterBottom>
-                  {user?.firstName} {user?.lastName}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user?.email}
-                </Typography>
+          <Box component="form" onSubmit={handleSubmitProfile(onSubmitProfile)}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
+                <TextField
+                  {...registerProfile('firstName')}
+                  fullWidth
+                  label="Имя"
+                  disabled={!editing}
+                  error={!!profileErrors.firstName}
+                  helperText={profileErrors.firstName?.message}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Person color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <TextField
+                  {...registerProfile('lastName')}
+                  fullWidth
+                  label="Фамилия"
+                  disabled={!editing}
+                  error={!!profileErrors.lastName}
+                  helperText={profileErrors.lastName?.message}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Person color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
               </Box>
+              <TextField
+                {...registerProfile('email')}
+                fullWidth
+                label="Email"
+                type="email"
+                disabled={!editing}
+                error={!!profileErrors.email}
+                helperText={profileErrors.email?.message}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Email color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField
+                {...registerProfile('phone')}
+                fullWidth
+                label="Телефон"
+                disabled={!editing}
+                error={!!profileErrors.phone}
+                helperText={profileErrors.phone?.message}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Phone color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
             </Box>
 
-            <Box sx={{ flex: 1 }}>
-              <Box component="form" onSubmit={handleSubmitProfile(onSubmitProfile)}>
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2 }}>
-                  <TextField
-                    {...registerProfile('firstName')}
-                    fullWidth
-                    label="Имя"
-                    disabled={!editing}
-                    error={!!profileErrors.firstName}
-                    helperText={profileErrors.firstName?.message}
-                  />
-                  <TextField
-                    {...registerProfile('lastName')}
-                    fullWidth
-                    label="Фамилия"
-                    disabled={!editing}
-                    error={!!profileErrors.lastName}
-                    helperText={profileErrors.lastName?.message}
-                  />
-                </Box>
+            <Divider sx={{ my: 3 }} />
 
-                <TextField
-                  {...registerProfile('email')}
-                  fullWidth
-                  label="Email"
-                  type="email"
-                  disabled={!editing}
-                  sx={{ mb: 2 }}
-                  error={!!profileErrors.email}
-                  helperText={profileErrors.email?.message}
-                />
-
-                <TextField
-                  {...registerProfile('phone')}
-                  fullWidth
-                  label="Телефон"
-                  disabled={!editing}
-                  sx={{ mb: 2 }}
-                  error={!!profileErrors.phone}
-                  helperText={profileErrors.phone?.message}
-                />
-
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  {editing ? (
-                    <>
-                      <Button
-                        type="submit"
-                        variant="contained"
-                        startIcon={<Save />}
-                        disabled={loading}
-                      >
-                        Сохранить
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        startIcon={<Cancel />}
-                        onClick={handleCancelEdit}
-                        disabled={loading}
-                      >
-                        Отмена
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      variant="contained"
-                      startIcon={<Edit />}
-                      onClick={handleEditProfile}
-                    >
-                      Редактировать
-                    </Button>
-                  )}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              {editing ? (
+                <>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    startIcon={loading ? <CircularProgress size={20} /> : <Save />}
+                    disabled={loading}
+                    size="large"
+                  >
+                    {loading ? 'Сохранение...' : 'Сохранить'}
+                  </Button>
                   <Button
                     variant="outlined"
-                    startIcon={<Lock />}
-                    onClick={() => setPasswordDialogOpen(true)}
+                    startIcon={<Cancel />}
+                    onClick={handleCancelEdit}
+                    disabled={loading}
+                    size="large"
                   >
-                    Изменить пароль
+                    Отмена
                   </Button>
-                </Box>
-              </Box>
+                </>
+              ) : (
+                <Button
+                  variant="contained"
+                  startIcon={<Edit />}
+                  onClick={handleEditProfile}
+                  size="large"
+                >
+                  Редактировать профиль
+                </Button>
+              )}
+              <Button
+                variant="outlined"
+                startIcon={<Lock />}
+                onClick={() => setPasswordDialogOpen(true)}
+                size="large"
+              >
+                Изменить пароль
+              </Button>
             </Box>
           </Box>
         </TabPanel>
 
+        {/* Мои бронирования */}
         <TabPanel value={tabValue} index={1}>
           {statsLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
               <CircularProgress />
             </Box>
           ) : myBookings.length === 0 ? (
-            <Box sx={{ textAlign: 'center', p: 4 }}>
-              <Tour sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary">
+            <Box sx={{ textAlign: 'center', p: 6 }}>
+              <Tour sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
                 У вас пока нет бронирований
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Забронируйте свой первый тур и начните путешествовать!
               </Typography>
             </Box>
           ) : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, 
+              gap: 3 
+            }}>
               {myBookings.map((booking) => (
-                <Card key={booking.id}>
+                <Card key={booking.id} elevation={1} sx={{ height: '100%', borderRadius: 2 }}>
                   <CardContent>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                      <Typography variant="h6">
+                      <Typography variant="h6" gutterBottom>
                         Бронирование #{booking.id.slice(-8)}
                       </Typography>
                       <Chip
-                        label={booking.status}
-                        color={booking.status === 'confirmed' ? 'success' : 
-                               booking.status === 'pending' ? 'warning' : 'error'}
-                        variant="outlined"
+                        label={getStatusText(booking.status)}
+                        color={getStatusColor(booking.status) as any}
+                        size="small"
                       />
                     </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Дата: {new Date(booking.startDate).toLocaleDateString('ru-RU')}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Участников: {booking.participants}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Стоимость: ₸{booking.totalPrice.toLocaleString('ru-RU')}
-                    </Typography>
+                    
+                    <List dense>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemIcon>
+                          <CalendarToday fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary="Дата начала"
+                          secondary={new Date(booking.startDate).toLocaleDateString('ru-RU')}
+                        />
+                      </ListItem>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemIcon>
+                          <Person fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary="Участники"
+                          secondary={`${booking.participants} чел.`}
+                        />
+                      </ListItem>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemIcon>
+                          <AttachMoney fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary="Стоимость"
+                          secondary={formatCurrency(booking.totalPrice)}
+                        />
+                      </ListItem>
+                    </List>
                   </CardContent>
                 </Card>
               ))}
@@ -468,25 +633,29 @@ const ProfilePage: React.FC = () => {
           )}
         </TabPanel>
 
+        {/* Мои отзывы */}
         <TabPanel value={tabValue} index={2}>
           {statsLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
               <CircularProgress />
             </Box>
           ) : myReviews.length === 0 ? (
-            <Box sx={{ textAlign: 'center', p: 4 }}>
-              <Star sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary">
+            <Box sx={{ textAlign: 'center', p: 6 }}>
+              <Star sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
                 У вас пока нет отзывов
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Оставьте отзыв о посещенном туре!
               </Typography>
             </Box>
           ) : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               {myReviews.map((review) => (
-                <Card key={review.id}>
+                <Card key={review.id} elevation={1} sx={{ borderRadius: 2 }}>
                   <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Box sx={{ display: 'flex', mr: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
@@ -496,17 +665,125 @@ const ProfilePage: React.FC = () => {
                             }}
                           />
                         ))}
+                        <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                          {review.rating}/5
+                        </Typography>
                       </Box>
                       <Typography variant="body2" color="text.secondary">
                         {new Date(review.createdAt).toLocaleDateString('ru-RU')}
                       </Typography>
                     </Box>
-                    <Typography variant="body1" paragraph>
+                    {review.title && (
+                      <Typography variant="h6" gutterBottom>
+                        {review.title}
+                      </Typography>
+                    )}
+                    <Typography variant="body1">
                       {review.comment}
                     </Typography>
                   </CardContent>
                 </Card>
               ))}
+            </Box>
+          )}
+        </TabPanel>
+
+        {/* Статистика */}
+        <TabPanel value={tabValue} index={3}>
+          {statsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <Box sx={{ 
+                display: 'grid', 
+                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, 
+                gap: 3 
+              }}>
+                {/* Статистика бронирований */}
+                <Card elevation={1} sx={{ borderRadius: 2, height: '100%' }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Tour sx={{ mr: 1, color: 'primary.main' }} />
+                      <Typography variant="h6">Бронирования</Typography>
+                    </Box>
+                    {userStats?.bookings?.length > 0 ? (
+                      <Box>
+                        {userStats.bookings.map((stat: any) => (
+                          <Box key={stat.status} sx={{ mb: 2 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                              <Typography variant="body2">
+                                {getStatusText(stat.status)}
+                              </Typography>
+                              <Typography variant="body2" fontWeight="bold">
+                                {stat.count}
+                              </Typography>
+                            </Box>
+                            <LinearProgress 
+                              variant="determinate" 
+                              value={(stat.count / userStats.bookings.reduce((acc: number, s: any) => acc + parseInt(s.count), 0)) * 100}
+                              color={getStatusColor(stat.status) as any}
+                            />
+                          </Box>
+                        ))}
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        Нет данных о бронированиях
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Статистика отзывов */}
+                <Card elevation={1} sx={{ borderRadius: 2, height: '100%' }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Star sx={{ mr: 1, color: 'warning.main' }} />
+                      <Typography variant="h6">Отзывы</Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="h3" color="primary.main" gutterBottom>
+                        {userStats?.reviews?.totalReviews || 0}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Всего отзывов
+                      </Typography>
+                      {userStats?.reviews?.averageRating > 0 && (
+                        <>
+                          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2 }}>
+                            <Star sx={{ color: 'warning.main', mr: 0.5 }} />
+                            <Typography variant="h5" color="warning.main">
+                              {parseFloat(userStats.reviews.averageRating).toFixed(1)}
+                            </Typography>
+                          </Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Средняя оценка
+                          </Typography>
+                        </>
+                      )}
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Box>
+
+              {/* Общая потраченная сумма */}
+              <Card elevation={1} sx={{ borderRadius: 2 }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 2 }}>
+                    <EmojiEvents sx={{ mr: 2, color: 'success.main', fontSize: 40 }} />
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4" color="success.main" gutterBottom>
+                        {formatCurrency(userStats?.totalSpent || 0)}
+                      </Typography>
+                      <Typography variant="h6" color="text.secondary">
+                        Общая сумма путешествий
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
             </Box>
           )}
         </TabPanel>
@@ -518,51 +795,101 @@ const ProfilePage: React.FC = () => {
         onClose={() => setPasswordDialogOpen(false)}
         maxWidth="sm"
         fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
       >
-        <DialogTitle>Изменить пароль</DialogTitle>
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Lock sx={{ mr: 1 }} />
+            Изменить пароль
+          </Box>
+        </DialogTitle>
         <DialogContent>
           <Box component="form" onSubmit={handleSubmitPassword(onSubmitPassword)} sx={{ pt: 2 }}>
             <TextField
               {...registerPassword('currentPassword')}
               fullWidth
               label="Текущий пароль"
-              type="password"
+              type={showCurrentPassword ? 'text' : 'password'}
               margin="normal"
               error={!!passwordErrors.currentPassword}
               helperText={passwordErrors.currentPassword?.message}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      edge="end"
+                    >
+                      {showCurrentPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
             
             <TextField
               {...registerPassword('newPassword')}
               fullWidth
               label="Новый пароль"
-              type="password"
+              type={showNewPassword ? 'text' : 'password'}
               margin="normal"
               error={!!passwordErrors.newPassword}
               helperText={passwordErrors.newPassword?.message}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      edge="end"
+                    >
+                      {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
             
             <TextField
               {...registerPassword('confirmPassword')}
               fullWidth
               label="Подтвердите новый пароль"
-              type="password"
+              type={showConfirmPassword ? 'text' : 'password'}
               margin="normal"
               error={!!passwordErrors.confirmPassword}
               helperText={passwordErrors.confirmPassword?.message}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      edge="end"
+                    >
+                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPasswordDialogOpen(false)}>
+        <DialogActions sx={{ p: 3, pt: 1 }}>
+          <Button 
+            onClick={() => {
+              setPasswordDialogOpen(false);
+              resetPassword();
+            }}
+            size="large"
+          >
             Отмена
           </Button>
           <Button 
             onClick={handleSubmitPassword(onSubmitPassword)}
             variant="contained"
             disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : <Lock />}
+            size="large"
           >
-            {loading ? <CircularProgress size={20} /> : 'Изменить пароль'}
+            {loading ? 'Изменение...' : 'Изменить пароль'}
           </Button>
         </DialogActions>
       </Dialog>
