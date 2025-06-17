@@ -12,7 +12,7 @@ interface AuthContextType extends AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (userData: RegisterData) => Promise<void>;
+  register: (userData: RegisterData) => Promise<any>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => Promise<void>;
   checkAuth: () => Promise<void>;
@@ -134,14 +134,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     dispatch({ type: 'LOGIN_START' });
     try {
       const response = await apiService.register(userData);
-      if (response.status === 'success' && response.data) {
-        const { user, token } = response.data;
-        localStorage.setItem('token', token);
-        apiService.setToken(token);
-        dispatch({
-          type: 'LOGIN_SUCCESS',
-          payload: user,
-        });
+      if (response.status === 'success') {
+        // Не логиним автоматически - пользователь должен подтвердить email
+        dispatch({ type: 'SET_LOADING', payload: false });
+        return response; // Возвращаем ответ для обработки в компоненте
       } else {
         throw new Error(response.message || 'Ошибка регистрации');
       }

@@ -24,9 +24,7 @@ const authValidation = {
       .normalizeEmail(),
     body('password')
       .isLength({ min: 6 })
-      .withMessage('Пароль должен содержать минимум 6 символов')
-      .matches(/\d/)
-      .withMessage('Пароль должен содержать хотя бы одну цифру'),
+      .withMessage('Пароль должен содержать минимум 6 символов'),
     body('firstName')
       .trim()
       .notEmpty()
@@ -49,6 +47,22 @@ const authValidation = {
     body('password')
       .notEmpty()
       .withMessage('Введите пароль'),
+    handleValidationErrors,
+  ],
+  forgotPassword: [
+    body('email')
+      .isEmail()
+      .withMessage('Введите корректный email адрес')
+      .normalizeEmail(),
+    handleValidationErrors,
+  ],
+  resetPassword: [
+    body('token')
+      .notEmpty()
+      .withMessage('Токен обязателен'),
+    body('password')
+      .isLength({ min: 6 })
+      .withMessage('Новый пароль должен содержать минимум 6 символов'),
     handleValidationErrors,
   ],
 };

@@ -65,12 +65,13 @@ const RegisterPage: React.FC = () => {
       setSuccess('');
       
       const { confirmPassword, ...registerData } = data;
-      await registerUser(registerData);
+      const response = await registerUser(registerData);
       
-      setSuccess('Регистрация успешна! Перенаправляем...');
-      setTimeout(() => {
-        navigate('/');
-      }, 2000);
+      if (response && response.message) {
+        setSuccess(response.message);
+      } else {
+        setSuccess('Регистрация успешна! Проверьте вашу почту для подтверждения аккаунта.');
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Ошибка регистрации');
     }
@@ -109,6 +110,20 @@ const RegisterPage: React.FC = () => {
           {success && (
             <Alert severity="success" sx={{ width: '100%', mb: 2 }}>
               {success}
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Не получили письмо? Проверьте папку "Спам" или попробуйте войти в систему.
+                </Typography>
+                <Button
+                  component={RouterLink}
+                  to="/login"
+                  variant="outlined"
+                  size="small"
+                  sx={{ mt: 1 }}
+                >
+                  Перейти к входу
+                </Button>
+              </Box>
             </Alert>
           )}
 

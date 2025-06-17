@@ -34,6 +34,9 @@ module.exports = {
     maxFileSize: process.env.MAX_FILE_SIZE || 5242880, // 5MB
   },
 
+  // URL клиентского приложения
+  clientUrl: process.env.CLIENT_URL || 'http://localhost:3000',
+
   // CORS
   cors: {
     origin: process.env.CLIENT_URL || 'http://localhost:3000',

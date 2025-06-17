@@ -17,9 +17,27 @@ app.use(helmet()); // Безопасность
 
 // CORS настройки
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: function (origin, callback) {
+    // Разрешаем запросы без origin (например, мобильные приложения)
+    if (!origin) return callback(null, true);
+    
+    // Разрешенные домены
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
+      config.cors.origin
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true
 }));
 app.use(compression()); // Сжатие ответов
@@ -46,7 +64,7 @@ app.use((err, req, res, next) => {
   res.status(statusCode).json({
     status: 'error',
     message,
-    ...(config.env === 'development' && { stack: err.stack }),
+    ...(config.nodeEnv === 'development' && { stack: err.stack }),
   });
 });
 
@@ -57,7 +75,7 @@ async function startServer() {
   try {
     // Синхронизация с базой данных (не запускаем при тестировании)
     if (process.env.NODE_ENV !== 'test') {
-      await sequelize.sync({ alter: config.env === 'development' });
+      await sequelize.sync({ alter: config.nodeEnv === 'development' });
       console.log('База данных синхронизирована');
     }
 

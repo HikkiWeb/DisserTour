@@ -51,14 +51,33 @@ class ApiService {
         headers,
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw {
+          response: {
+            data: data
+          },
+          message: data.message || `HTTP error! status: ${response.status}`
+        };
       }
 
-      return await response.json();
-    } catch (error) {
+      return data;
+    } catch (error: any) {
       console.error('API request failed:', error);
-      throw error;
+      // Если это уже обработанная ошибка, передаем как есть
+      if (error.response) {
+        throw error;
+      }
+      // Иначе оборачиваем в стандартный формат
+      throw {
+        response: {
+          data: {
+            message: error.message || 'Ошибка сети'
+          }
+        },
+        message: error.message || 'Ошибка сети'
+      };
     }
   }
 
@@ -89,6 +108,20 @@ class ApiService {
     return this.request<LoginResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
+    });
+  }
+
+  async forgotPassword(email: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(token: string, password: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
     });
   }
 

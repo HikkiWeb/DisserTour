@@ -81,6 +81,12 @@ const emailTemplates = {
 // Функция отправки email
 const sendEmail = async (to, template, data) => {
   try {
+    // Проверяем настройки SMTP
+    if (!config.email.user || !config.email.pass) {
+      console.error('❌ SMTP настройки не установлены. Проверьте переменные SMTP_USER и SMTP_PASS в .env файле');
+      throw new Error('SMTP настройки не установлены');
+    }
+
     const { subject, html } = emailTemplates[template](data);
     
     const mailOptions = {
@@ -90,12 +96,19 @@ const sendEmail = async (to, template, data) => {
       html,
     };
     
+    console.log(`📧 Отправка email: ${template} -> ${to}`);
     const info = await transporter.sendMail(mailOptions);
-    console.log('Email отправлен:', info.messageId);
+    console.log('✅ Email отправлен успешно:', info.messageId);
     return true;
   } catch (error) {
-    console.error('Ошибка отправки email:', error);
-    throw new Error('Не удалось отправить email');
+    console.error('❌ Ошибка отправки email:', error.message);
+    console.error('📋 Настройки SMTP:', {
+      host: config.email.host,
+      port: config.email.port,
+      user: config.email.user,
+      pass: config.email.pass ? '***' : 'НЕ УСТАНОВЛЕН'
+    });
+    throw new Error('Не удалось отправить email: ' + error.message);
   }
 };
 

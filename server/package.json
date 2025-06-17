@@ -6,7 +6,11 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "jest"
+    "setup": "node start-server.js",
+    "test": "jest",
+    "test-smtp": "node test-smtp.js",
+    "sync-db": "node -e \"require('./models').sequelize.sync({force: false, alter: true}).then(() => console.log('База данных синхронизирована')).catch(err => console.error('Ошибка:', err))\"",
+    "debug-user": "node debug-verification.js"
   },
   "keywords": [],
   "author": "",

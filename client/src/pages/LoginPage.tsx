@@ -34,8 +34,16 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [error, setError] = useState<string>('');
+  const [info, setInfo] = useState<string>('');
 
   const from = (location.state as any)?.from?.pathname || '/';
+  const message = (location.state as any)?.message;
+
+  React.useEffect(() => {
+    if (message) {
+      setInfo(message);
+    }
+  }, [message]);
 
   const {
     register,
@@ -82,6 +90,12 @@ const LoginPage: React.FC = () => {
           {error && (
             <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
               {error}
+            </Alert>
+          )}
+
+          {info && (
+            <Alert severity="success" sx={{ width: '100%', mb: 2 }}>
+              {info}
             </Alert>
           )}
 

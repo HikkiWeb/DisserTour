@@ -35,15 +35,9 @@ class AuthController {
       // Отправка email для верификации
       await sendEmail(email, 'verification', verificationToken);
 
-      // Создание JWT токена
-      const token = jwt.sign(
-        { id: user.id },
-        config.jwt.secret,
-        { expiresIn: config.jwt.expiresIn }
-      );
-
       res.status(201).json({
         status: 'success',
+        message: 'Регистрация успешна! Проверьте вашу почту для подтверждения аккаунта.',
         data: {
           user: {
             id: user.id,
@@ -51,8 +45,8 @@ class AuthController {
             firstName: user.firstName,
             lastName: user.lastName,
             role: user.role,
+            isVerified: user.isVerified,
           },
-          token,
         },
       });
     } catch (error) {
@@ -119,11 +113,31 @@ class AuthController {
   // Подтверждение email
   static async verifyEmail(req, res, next) {
     try {
-      const { token } = req.params;
+      let { token } = req.params;
+      
+      console.log('🔍 Получен токен для верификации:', token);
+
+      // Декодируем токен из URL (на случай если он был закодирован)
+      try {
+        token = decodeURIComponent(token);
+        console.log('📝 Декодированный токен:', token);
+      } catch (decodeError) {
+        console.log('⚠️ Ошибка декодирования токена, используем исходный');
+      }
+
+      if (!token || token.trim() === '') {
+        console.log('❌ Пустой токен');
+        return res.status(400).json({
+          status: 'error',
+          message: 'Токен верификации не предоставлен',
+        });
+      }
 
       const user = await User.findOne({
         where: { verificationToken: token },
       });
+
+      console.log('👤 Найден пользователь:', user ? `${user.email} (ID: ${user.id})` : 'не найден');
 
       if (!user) {
         return res.status(400).json({
@@ -132,15 +146,27 @@ class AuthController {
         });
       }
 
+      // Проверяем, не подтвержден ли уже email
+      if (user.isVerified) {
+        console.log('✅ Email уже подтвержден для пользователя:', user.email);
+        return res.json({
+          status: 'success',
+          message: 'Email уже был подтвержден ранее',
+        });
+      }
+
       user.isVerified = true;
       user.verificationToken = null;
       await user.save();
+
+      console.log('🎉 Email успешно подтвержден для пользователя:', user.email);
 
       res.json({
         status: 'success',
         message: 'Email успешно подтвержден',
       });
     } catch (error) {
+      console.error('❌ Ошибка при подтверждении email:', error);
       next(error);
     }
   }

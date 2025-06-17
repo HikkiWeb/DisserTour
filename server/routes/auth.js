@@ -14,10 +14,10 @@ router.post('/login', authValidation.login, AuthController.login);
 router.get('/verify-email/:token', AuthController.verifyEmail);
 
 // Запрос на сброс пароля
-router.post('/forgot-password', AuthController.forgotPassword);
+router.post('/forgot-password', authValidation.forgotPassword, AuthController.forgotPassword);
 
 // Сброс пароля
-router.post('/reset-password/:token', authValidation.login, AuthController.resetPassword);
+router.post('/reset-password', authValidation.resetPassword, AuthController.resetPassword);
 
 // Получение информации о текущем пользователе
 router.get('/me', authenticate, AuthController.getCurrentUser);

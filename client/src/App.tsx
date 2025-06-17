@@ -8,6 +8,9 @@ import { AuthProvider } from './context/AuthContext';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import ToursPage from './pages/ToursPage';
 import TourDetailsPage from './pages/TourDetailsPage';
 import BookingsPage from './pages/BookingsPage';
@@ -61,7 +64,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 12,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)', 
         },
       },
     },
@@ -82,6 +85,9 @@ function App() {
               <Route path="/tours/:id" element={<TourDetailsPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
 
               {/* Защищенные маршруты */}
               <Route
