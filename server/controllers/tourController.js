@@ -10,7 +10,7 @@ class TourController {
       const tourData = { 
         ...req.body,
         guideId: req.user.id,
-        images: req.files ? req.files.map(file => file.path) : [],
+        images: req.files ? req.files.map(file => `/uploads/tours/${file.filename}`) : [],
       };
 
       const tour = await Tour.create(tourData);
@@ -22,7 +22,7 @@ class TourController {
     } catch (error) {
       // Удаляем загруженные файлы в случае ошибки
       if (req.files) {
-        req.files.forEach(file => deleteFile(file.path));
+        req.files.forEach(file => deleteFile(`tours/${file.filename}`));
       }
       next(error);
     }
@@ -172,9 +172,13 @@ class TourController {
       if (req.files && req.files.length > 0) {
         // Удаляем старые изображения
         if (tour.images) {
-          tour.images.forEach(image => deleteFile(image));
+          tour.images.forEach(image => {
+            // Преобразуем веб-путь в файловый путь
+            const filePath = image.replace('/uploads/', '');
+            deleteFile(filePath);
+          });
         }
-        updateData.images = req.files.map(file => file.path);
+        updateData.images = req.files.map(file => `/uploads/tours/${file.filename}`);
       }
 
       await tour.update(updateData);
@@ -185,7 +189,7 @@ class TourController {
       });
     } catch (error) {
       if (req.files) {
-        req.files.forEach(file => deleteFile(file.path));
+        req.files.forEach(file => deleteFile(`tours/${file.filename}`));
       }
       next(error);
     }
@@ -228,7 +232,11 @@ class TourController {
 
       // Удаляем изображения
       if (tour.images) {
-        tour.images.forEach(image => deleteFile(image));
+        tour.images.forEach(image => {
+          // Преобразуем веб-путь в файловый путь
+          const filePath = image.replace('/uploads/', '');
+          deleteFile(filePath);
+        });
       }
 
       await tour.destroy();

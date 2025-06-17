@@ -13,6 +13,7 @@ import { LocationOn, AccessTime, People } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { Tour } from '../types';
 import { getDifficultyText, getDifficultyColor } from '../utils/translations';
+import { getFirstImageUrl, handleImageError, debugImage } from '../utils/imageUtils';
 
 interface TourCardProps {
   tour: Tour;
@@ -24,6 +25,9 @@ const TourCard: React.FC<TourCardProps> = ({ tour }) => {
   const handleClick = () => {
     navigate(`/tours/${tour.id}`);
   };
+
+  // Получаем URL изображения
+  const imageUrl = getFirstImageUrl(tour.images);
 
   return (
     <Card
@@ -40,12 +44,13 @@ const TourCard: React.FC<TourCardProps> = ({ tour }) => {
       }}
       onClick={handleClick}
     >
-      <CardMedia
+            <CardMedia
         component="img"
         height="200"
-        image={tour.images && tour.images.length > 0 ? tour.images[0] : '/placeholder-tour.jpg'}
+        image={imageUrl}
         alt={tour.title}
         sx={{ objectFit: 'cover' }}
+        onError={handleImageError}
       />
 
       <CardContent sx={{ flexGrow: 1 }}>

@@ -47,8 +47,21 @@ app.use(morgan('dev')); // Логирование
 app.use(express.json({ limit: '50mb' })); // Парсинг JSON с лимитом 50mb
 app.use(express.urlencoded({ extended: true, limit: '50mb' })); // Парсинг URL-encoded с лимитом 50mb
 
-// Статические файлы
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Статические файлы с правильными заголовками CORS
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  
+  // Обработка preflight запросов
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+    return;
+  }
+  
+  next();
+}, express.static(path.join(__dirname, 'uploads')));
 
 // Маршруты API
 app.use('/api', routes);
@@ -71,7 +84,7 @@ app.use((err, req, res, next) => {
 });
 
 // Запуск сервера
-const PORT = config.port || 3000;
+const PORT = config.port || 5000;
 
 async function startServer() {
   try {
