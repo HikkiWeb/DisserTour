@@ -242,18 +242,28 @@ class ApiService {
     return this.request<any>('/auth/stats');
   }
 
-  // Admin/Guide Methods
+  // Admin Methods
   async getUsers(): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
     return this.request<SimplePaginatedResponse<any>>('/admin/users');
   }
 
-  async getGuideTours(): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
-    return this.request<SimplePaginatedResponse<any>>('/guide/tours');
+  async getAdminTours(): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
+    return this.request<SimplePaginatedResponse<any>>('/admin/tours');
   }
 
-  async getGuideBookings(): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
-    return this.request<SimplePaginatedResponse<any>>('/guide/bookings');
+  async getAllBookings(): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
+    return this.request<SimplePaginatedResponse<any>>('/admin/bookings');
   }
+
+  async getAdminReviews(): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
+    return this.request<SimplePaginatedResponse<any>>('/admin/reviews');
+  }
+
+  async getDashboardStats(): Promise<ApiResponse<any>> {
+    return this.request<any>('/admin/stats');
+  }
+
+
 
   async createTour(tourData: any): Promise<ApiResponse<any>> {
     return this.request<any>('/tours', {
@@ -317,31 +327,22 @@ class ApiService {
     });
   }
 
-  async getAllBookings(): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
-    return this.request<SimplePaginatedResponse<any>>('/admin/bookings');
-  }
-
-  async getDashboardStats(): Promise<ApiResponse<any>> {
-    return this.request<any>('/admin/stats');
-  }
-
-  async getGuideStats(): Promise<ApiResponse<any>> {
-    return this.request<any>('/guide/stats');
-  }
-
   // Админские CRUD операции
   // Пользователи
   async createUser(userData: {
-    email: string;
-    password: string;
     firstName: string;
     lastName: string;
-    role?: string;
+    email: string;
+    password: string;
+    role: string;
     phone?: string;
   }): Promise<ApiResponse<any>> {
     return this.request<any>('/admin/users', {
       method: 'POST',
-      body: JSON.stringify(userData),
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(userData)
     });
   }
 
@@ -353,25 +354,20 @@ class ApiService {
   }
 
   // Туры
-  async getAdminTours(): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
-    return this.request<SimplePaginatedResponse<any>>('/admin/tours');
-  }
-
   async createAdminTour(tourData: FormData | {
     title: string;
     description: string;
     shortDescription?: string;
     price: number;
     duration: number;
-    maxGroupSize?: number;
-    difficulty?: string;
-    category?: string;
+    maxGroupSize: number;
+    difficulty: string;
+    category: string;
     region: string;
-    season?: string | string[];
-    guideId?: string;
-    startLocation?: string | any;
-    locations?: string[];
-    itinerary?: string[] | any;
+    season: string[];
+    startLocation?: any;
+    locations?: any[];
+    itinerary?: any[];
     included?: string[];
     excluded?: string[];
     requirements?: string[];
@@ -381,8 +377,12 @@ class ApiService {
     
     return this.request<any>('/admin/tours', {
       method: 'POST',
-      headers: isFormData ? {} : { 'Content-Type': 'application/json' },
-      body: isFormData ? tourData : JSON.stringify(tourData),
+      headers: isFormData ? {
+        'Content-Type': 'multipart/form-data'
+      } : {
+        'Content-Type': 'application/json'
+      },
+      body: isFormData ? tourData : JSON.stringify(tourData)
     });
   }
 
@@ -422,10 +422,6 @@ class ApiService {
   }
 
   // Отзывы
-  async getAdminReviews(): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
-    return this.request<SimplePaginatedResponse<any>>('/admin/reviews');
-  }
-
   async deleteAdminReview(reviewId: string): Promise<ApiResponse<any>> {
     return this.request<any>(`/admin/reviews/${reviewId}`, {
       method: 'DELETE',
@@ -437,11 +433,6 @@ class ApiService {
       method: 'PUT',
       body: JSON.stringify({ response }),
     });
-  }
-
-  // Получить всех гидов для выпадающего списка
-  async getGuides(): Promise<ApiResponse<{ guides: any[] }>> {
-    return this.request<{ guides: any[] }>('/users?role=guide');
   }
 }
 

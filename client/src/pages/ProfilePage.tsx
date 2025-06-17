@@ -408,8 +408,8 @@ const ProfilePage: React.FC = () => {
               </Box>
             )}
             <Chip
-              label={user?.role === 'admin' ? 'Администратор' : user?.role === 'guide' ? 'Гид' : 'Пользователь'}
-              color={user?.role === 'admin' ? 'error' : user?.role === 'guide' ? 'warning' : 'default'}
+              label={user?.role === 'admin' ? 'Администратор' : 'Пользователь'}
+              color={user?.role === 'admin' ? 'error' : 'default'}
               size="small"
               sx={{ mt: 1 }}
             />

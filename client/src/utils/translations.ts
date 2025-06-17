@@ -25,7 +25,6 @@ export const getCategoryText = (category: string): string => {
 export const getRoleText = (role: string): string => {
   const roleMap: { [key: string]: string } = {
     'user': 'Пользователь',
-    'guide': 'Гид',
     'admin': 'Администратор'
   };
   return roleMap[role] || role;

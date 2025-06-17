@@ -62,7 +62,7 @@ const Header: React.FC = () => {
               <Button color="inherit" component={Link} to="/bookings">
                 Мои бронирования
               </Button>
-              {(user?.role === 'guide' || user?.role === 'admin') && (
+              {user?.role === 'admin' && (
                 <Button color="inherit" component={Link} to="/dashboard">
                   Панель управления
                 </Button>
@@ -115,7 +115,7 @@ const Header: React.FC = () => {
                 Мои бронирования
               </MenuItem>
 
-              {(user?.role === 'guide' || user?.role === 'admin') && (
+              {user?.role === 'admin' && (
                 <MenuItem onClick={() => { navigate('/dashboard'); handleClose(); }}>
                   <Dashboard sx={{ mr: 1 }} />
                   Панель управления

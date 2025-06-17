@@ -4,7 +4,7 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
-  role: 'user' | 'guide' | 'admin';
+  role: 'user' | 'admin';
   avatar?: string;
   phone?: string;
   isVerified?: boolean;
@@ -33,13 +33,11 @@ export interface Tour {
   rating: number;
   ratingCount: number;
   isActive: boolean;
-  guideId?: string;
   startLocation?: any; // JSONB поле
   locations: any[]; // ARRAY(JSONB)
   tags: string[];
   createdAt?: string;
   updatedAt?: string;
-  guide?: User;
 }
 
 // День маршрута
@@ -178,7 +176,6 @@ export interface TourFormData {
   category: string;
   region: string;
   season: string | string[];
-  guideId: string;
   startLocation: string | any;
   locations: string[] | any[];
   itinerary: string[] | any;

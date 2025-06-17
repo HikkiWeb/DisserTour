@@ -92,7 +92,6 @@ export const translateStatus = (status: string): string => {
 export const translateRole = (role: string): string => {
   const roleTranslations: Record<string, string> = {
     user: 'Пользователь',
-    guide: 'Гид',
     admin: 'Администратор',
   };
   

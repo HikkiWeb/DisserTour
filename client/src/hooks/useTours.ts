@@ -139,8 +139,7 @@ export const usePopularTours = () => {
           rating: 4.8,
           ratingCount: 124,
           isActive: true,
-          locations: [],
-          guide: { id: '1', firstName: 'Асель', lastName: 'Жумабекова', email: 'guide@example.com', role: 'guide' }
+          locations: []
         },
         {
           id: '2', 
@@ -160,11 +159,10 @@ export const usePopularTours = () => {
           excluded: ['Питание', 'Личные расходы'],
           requirements: ['Удобная обувь'],
           tags: ['город', 'архитектура', 'столица'],
-          rating: 4.9,
+          rating: 4.6,
           ratingCount: 89,
           isActive: true,
-          locations: [],
-          guide: { id: '2', firstName: 'Нурлан', lastName: 'Сарсенов', email: 'guide2@example.com', role: 'guide' }
+          locations: []
         }
       ]);
     } finally {
@@ -224,10 +222,9 @@ export const useSeasonalTours = () => {
           requirements: ['Горные ботинки', 'Теплая одежда'],
           tags: ['горы', 'природа', 'весна'],
           rating: 4.7,
-          ratingCount: 67,
+          ratingCount: 156,
           isActive: true,
-          locations: [],
-          guide: { id: '3', firstName: 'Ерлан', lastName: 'Каримов', email: 'guide3@example.com', role: 'guide' }
+          locations: []
         }
       ]);
     } finally {
