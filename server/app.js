@@ -42,8 +42,10 @@ app.use(cors({
 }));
 app.use(compression()); // Сжатие ответов
 app.use(morgan('dev')); // Логирование
-app.use(express.json()); // Парсинг JSON
-app.use(express.urlencoded({ extended: true })); // Парсинг URL-encoded
+
+// Увеличенные лимиты для JSON и urlencoded
+app.use(express.json({ limit: '50mb' })); // Парсинг JSON с лимитом 50mb
+app.use(express.urlencoded({ extended: true, limit: '50mb' })); // Парсинг URL-encoded с лимитом 50mb
 
 // Статические файлы
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

@@ -1,22 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../middleware/auth');
-const User = require('../models/User');
-const Tour = require('../models/Tour');
-const Booking = require('../models/Booking');
-const Review = require('../models/Review');
+const bodyParser = require('body-parser');
+const { authenticate, authorize } = require('../middleware/auth');
+const { upload, handleUploadError } = require('../middleware/upload');
+const { User, Tour, Booking, Review } = require('../models');
+const emailService = require('../services/emailService');
 const { Op } = require('sequelize');
 
 // Middleware для проверки роли администратора
-const requireAdmin = (req, res, next) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({
-      status: 'error',
-      message: 'Доступ запрещен. Требуются права администратора.'
-    });
-  }
-  next();
-};
+const requireAdmin = authorize('admin');
 
 // Получить всех пользователей
 router.get('/users', authenticate, requireAdmin, async (req, res) => {
@@ -341,6 +333,34 @@ router.post('/tours', authenticate, requireAdmin, async (req, res) => {
       }
     }
 
+    // Обработка JSON полей
+    let processedLocations = [];
+    if (locations) {
+      try {
+        processedLocations = typeof locations === 'string' ? JSON.parse(locations) : locations;
+      } catch (e) {
+        processedLocations = locations.split(',').map(item => item.trim()).filter(item => item);
+      }
+    }
+
+    let processedItinerary = null;
+    if (itinerary) {
+      try {
+        processedItinerary = typeof itinerary === 'string' ? JSON.parse(itinerary) : itinerary;
+      } catch (e) {
+        processedItinerary = itinerary.split('\n').filter(item => item.trim());
+      }
+    }
+
+    let processedStartLocation = null;
+    if (startLocation) {
+      try {
+        processedStartLocation = typeof startLocation === 'string' ? JSON.parse(startLocation) : startLocation;
+      } catch (e) {
+        processedStartLocation = { address: startLocation };
+      }
+    }
+
     const tour = await Tour.create({
       title,
       description,
@@ -351,17 +371,15 @@ router.post('/tours', authenticate, requireAdmin, async (req, res) => {
       difficulty: difficulty || 'moderate',
       category: category || 'nature',
       region,
-      season: season ? [season] : ['all'],
+      season: Array.isArray(season) ? season : (season ? [season] : ['all']),
       guideId: guideId || null,
-      startLocation: startLocation && typeof startLocation === 'string' 
-        ? (startLocation.startsWith('{') ? JSON.parse(startLocation) : { address: startLocation })
-        : startLocation || null,
-      locations: locations || [],
-      itinerary: Array.isArray(itinerary) ? itinerary : null,
-      included: included || [],
-      excluded: excluded || [],
-      requirements: requirements || [],
-      tags: tags || [],
+      startLocation: processedStartLocation,
+      locations: processedLocations,
+      itinerary: processedItinerary,
+      included: Array.isArray(included) ? included : (included ? (typeof included === 'string' ? JSON.parse(included) : []) : []),
+      excluded: Array.isArray(excluded) ? excluded : (excluded ? (typeof excluded === 'string' ? JSON.parse(excluded) : []) : []),
+      requirements: Array.isArray(requirements) ? requirements : (requirements ? (typeof requirements === 'string' ? JSON.parse(requirements) : []) : []),
+      tags: Array.isArray(tags) ? tags : (tags ? (typeof tags === 'string' ? JSON.parse(tags) : []) : []),
       images: [],
       isActive: true,
       rating: 0,
@@ -866,5 +884,69 @@ router.get('/stats', authenticate, requireAdmin, async (req, res) => {
     });
   }
 });
+
+// Загрузить изображения для тура
+router.post(
+  '/tours/:id/images',
+  authenticate,
+  requireAdmin,
+  upload.array('images', 10),
+  handleUploadError,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      console.log('🖼️ Загрузка изображений для тура:', id);
+      console.log('📁 Файлы в запросе:', req.files ? req.files.length : 0);
+      
+      if (req.files && req.files.length > 0) {
+        console.log('📋 Детали файлов:');
+        req.files.forEach((file, index) => {
+          console.log(`  ${index + 1}. ${file.originalname} -> ${file.filename} (${file.size} bytes)`);
+        });
+      }
+      
+      const tour = await Tour.findByPk(id);
+      if (!tour) {
+        console.log('❌ Тур не найден:', id);
+        return res.status(404).json({
+          status: 'error',
+          message: 'Тур не найден'
+        });
+      }
+
+      console.log('✅ Тур найден:', tour.title);
+
+      // Обработка загруженных изображений
+      const newImageUrls = req.files && req.files.length > 0 
+        ? req.files.map(file => `/uploads/tours/${file.filename}`) 
+        : [];
+      
+      console.log('🔗 Новые URL изображений:', newImageUrls);
+      
+      // Добавляем новые изображения к существующим
+      const currentImages = Array.isArray(tour.images) ? tour.images : [];
+      const updatedImages = [...currentImages, ...newImageUrls];
+      
+      console.log('📸 Обновленный список изображений:', updatedImages);
+      
+      await tour.update({ images: updatedImages });
+
+      console.log('✅ Изображения успешно сохранены в БД');
+
+      res.json({
+        status: 'success',
+        message: 'Изображения успешно загружены',
+        data: { tour }
+      });
+    } catch (error) {
+      console.error('❌ Ошибка при загрузке изображений:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Ошибка при загрузке изображений'
+      });
+    }
+  }
+);
 
 module.exports = router; 

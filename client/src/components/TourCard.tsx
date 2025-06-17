@@ -43,7 +43,7 @@ const TourCard: React.FC<TourCardProps> = ({ tour }) => {
       <CardMedia
         component="img"
         height="200"
-        image={tour.mainImage || '/placeholder-tour.jpg'}
+        image={tour.images && tour.images.length > 0 ? tour.images[0] : '/placeholder-tour.jpg'}
         alt={tour.title}
         sx={{ objectFit: 'cover' }}
       />
@@ -88,7 +88,7 @@ const TourCard: React.FC<TourCardProps> = ({ tour }) => {
             minHeight: '4.5em',
           }}
         >
-          {tour.description}
+          {tour.shortDescription || tour.description}
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -108,14 +108,14 @@ const TourCard: React.FC<TourCardProps> = ({ tour }) => {
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
           <People fontSize="small" color="action" />
           <Typography variant="body2" sx={{ ml: 0.5 }}>
-            До {tour.maxParticipants} чел.
+            До {tour.maxGroupSize} чел.
           </Typography>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <Rating value={tour.rating} readOnly size="small" />
           <Typography variant="body2" color="text.secondary">
-            ({tour.reviewsCount})
+            ({tour.ratingCount})
           </Typography>
         </Box>
 

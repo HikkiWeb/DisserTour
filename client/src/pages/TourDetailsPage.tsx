@@ -37,6 +37,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
 import { Tour, Review, Booking } from '../types';
+import { getDifficultyText } from '../utils/translations';
 
 const TourDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -144,7 +145,7 @@ const TourDetailsPage: React.FC = () => {
         <Grid container spacing={4}>
           <Grid sx={{ gridColumn: { xs: '1 / -1', md: '1 / span 6' } }}>
             <img
-              src={tour.mainImage}
+              src={tour.images && tour.images.length > 0 ? tour.images[0] : '/placeholder-tour.jpg'}
               alt={tour.title}
               style={{
                 width: '100%',
@@ -173,7 +174,7 @@ const TourDetailsPage: React.FC = () => {
               />
               <Chip
                 icon={<DifficultyIcon />}
-                label={tour.difficulty}
+                label={getDifficultyText(tour.difficulty)}
                 sx={{ mb: 1 }}
               />
             </Box>
@@ -204,16 +205,16 @@ const TourDetailsPage: React.FC = () => {
           Программа тура
         </Typography>
         
-        {tour.itinerary.map((day, index) => (
+        {tour.itinerary && Array.isArray(tour.itinerary) && tour.itinerary.map((day: any, index: number) => (
           <Box key={index} sx={{ mb: 2 }}>
             <Typography variant="h6" gutterBottom>
-              День {day.day}
+              День {day.day || index + 1}
             </Typography>
             <Typography variant="subtitle1" gutterBottom>
-              {day.title}
+              {day.title || `День ${index + 1}`}
             </Typography>
             <Typography variant="body1" paragraph>
-              {day.description}
+              {day.description || day}
             </Typography>
             {index < tour.itinerary.length - 1 && <Divider sx={{ my: 2 }} />}
           </Box>
@@ -221,24 +222,26 @@ const TourDetailsPage: React.FC = () => {
       </Paper>
 
       {/* Галерея */}
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h5" gutterBottom>
-          Галерея
-        </Typography>
-        
-        <ImageList variant="masonry" cols={3} gap={8}>
-          {tour.gallery.map((image, index) => (
-            <ImageListItem key={index}>
-              <img
-                src={image}
-                alt={`Фото ${index + 1}`}
-                loading="lazy"
-                style={{ borderRadius: '4px' }}
-              />
-            </ImageListItem>
-          ))}
-        </ImageList>
-      </Paper>
+      {tour.images && tour.images.length > 1 && (
+        <Paper sx={{ p: 3, mb: 4 }}>
+          <Typography variant="h5" gutterBottom>
+            Галерея
+          </Typography>
+          
+          <ImageList variant="masonry" cols={3} gap={8}>
+            {tour.images.slice(1).map((image: string, index: number) => (
+              <ImageListItem key={index}>
+                <img
+                  src={image}
+                  alt={`Фото ${index + 1}`}
+                  loading="lazy"
+                  style={{ borderRadius: '4px' }}
+                />
+              </ImageListItem>
+            ))}
+          </ImageList>
+        </Paper>
+      )}
 
       {/* Отзывы */}
       <Paper sx={{ p: 3 }}>
@@ -312,7 +315,11 @@ const TourDetailsPage: React.FC = () => {
                   label="Дата начала тура"
                   onChange={(e) => setSelectedDate(e.target.value)}
                 >
-                  {tour.availableDates.map((date) => (
+                  {[
+                    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                  ].map((date: string) => (
                     <MenuItem key={date} value={date}>
                       {new Date(date).toLocaleDateString('ru-RU', {
                         day: 'numeric',
@@ -331,7 +338,7 @@ const TourDetailsPage: React.FC = () => {
                   label="Количество участников"
                   onChange={(e) => setParticipants(Number(e.target.value))}
                 >
-                  {[...Array(tour.maxParticipants)].map((_, i) => (
+                  {[...Array(tour.maxGroupSize)].map((_, i) => (
                     <MenuItem key={i + 1} value={i + 1}>
                       {i + 1}
                     </MenuItem>

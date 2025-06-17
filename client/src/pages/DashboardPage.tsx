@@ -38,6 +38,7 @@ import {
   FormControlLabel,
   Tooltip,
   Badge,
+  TablePagination,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -55,7 +56,6 @@ import {
   MoreVert,
   Check,
   Close,
-  Block,
   Star,
   CalendarToday,
   Phone,
@@ -66,6 +66,7 @@ import {
   SupervisorAccount,
   Verified,
   Badge as BadgeIcon,
+  CloudUpload,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
@@ -169,7 +170,7 @@ const DashboardPage: React.FC = () => {
     price: 0,
     duration: 1,
     maxGroupSize: 10,
-    difficulty: 'medium',
+    difficulty: 'moderate' as 'easy' | 'moderate' | 'challenging' | 'hard',
     category: 'nature',
     region: '',
     season: 'all',
@@ -181,7 +182,11 @@ const DashboardPage: React.FC = () => {
     excluded: [] as string[],
     requirements: [] as string[],
     tags: [] as string[],
+    images: [] as File[],
   });
+
+  // Состояние для предварительного просмотра изображений
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
 
   const isAdmin = user?.role === 'admin';
   const isGuide = user?.role === 'guide';
@@ -448,8 +453,74 @@ const DashboardPage: React.FC = () => {
       setUpdating(true);
       setError('');
       
-      const response = await apiService.createAdminTour(tourFormData);
-      if (response.status === 'success') {
+      // Валидация обязательных полей
+      if (!tourFormData.title.trim()) {
+        setError('Название тура обязательно');
+        return;
+      }
+      if (!tourFormData.description.trim()) {
+        setError('Описание тура обязательно');
+        return;
+      }
+      if (!tourFormData.price || tourFormData.price <= 0) {
+        setError('Цена должна быть больше 0');
+        return;
+      }
+      if (!tourFormData.region.trim()) {
+        setError('Регион обязателен');
+        return;
+      }
+      
+      // Подготовка данных для отправки
+      const { images, ...tourData } = tourFormData;
+      
+      // Обработка сезона
+      const processedSeason = tourData.season === 'all' ? ['spring', 'summer', 'autumn', 'winter'] : [tourData.season];
+      
+      // Обработка startLocation
+      const processedStartLocation = tourData.startLocation ? { address: tourData.startLocation } : null;
+      
+      // Обработка itinerary
+      const processedItinerary = tourData.itinerary.length > 0 
+        ? tourData.itinerary.map((item, index) => ({
+            day: index + 1,
+            description: item.trim()
+          })).filter(item => item.description)
+        : null;
+      
+      const processedTourData = {
+        ...tourData,
+        season: processedSeason,
+        startLocation: processedStartLocation,
+        itinerary: processedItinerary,
+        // Убеждаемся, что все массивы корректны
+        locations: tourData.locations.filter(item => item.trim()),
+        included: tourData.included.filter(item => item.trim()),
+        excluded: tourData.excluded.filter(item => item.trim()),
+        requirements: tourData.requirements.filter(item => item.trim()),
+        tags: tourData.tags.filter(item => item.trim()),
+      };
+      
+      const response = await apiService.createAdminTour(processedTourData);
+      
+      if (response.status === 'success' && response.data?.tour) {
+        const tourId = response.data.tour.id;
+        
+        // Если есть изображения, загружаем их отдельно
+        if (images && images.length > 0) {
+          const formData = new FormData();
+          images.forEach((file: File) => {
+            formData.append('images', file);
+          });
+          
+          try {
+            await apiService.uploadTourImages(tourId, formData);
+          } catch (imageError: any) {
+            console.warn('Ошибка загрузки изображений:', imageError);
+            // Тур создан, но изображения не загружены - это не критично
+          }
+        }
+        
         setSuccess('Тур успешно создан');
         setCreateTourDialogOpen(false);
         setTourFormData({
@@ -471,7 +542,9 @@ const DashboardPage: React.FC = () => {
           excluded: [],
           requirements: [],
           tags: [],
+          images: [],
         });
+        setImagePreviewUrls([]);
         loadDashboardData();
       }
     } catch (err: any) {
@@ -481,6 +554,69 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  const openEditTourDialog = (tour: TourType) => {
+    setSelectedTour(tour);
+    
+    // Обработка сезона - если это массив, берем первый элемент или 'all'
+    let seasonValue = 'all';
+    if (tour.season && Array.isArray(tour.season)) {
+      if (tour.season.length === 4 || tour.season.includes('all')) {
+        seasonValue = 'all';
+      } else if (tour.season.length > 0) {
+        seasonValue = tour.season[0];
+      }
+    }
+    
+    // Обработка startLocation
+    let startLocationValue = '';
+    if (tour.startLocation) {
+      if (typeof tour.startLocation === 'string') {
+        startLocationValue = tour.startLocation;
+      } else if (tour.startLocation.address) {
+        startLocationValue = tour.startLocation.address;
+      }
+    }
+    
+    // Обработка itinerary
+    let itineraryValue: string[] = [];
+    if (tour.itinerary) {
+      if (Array.isArray(tour.itinerary)) {
+        itineraryValue = tour.itinerary.map((item: any) => {
+          if (typeof item === 'string') {
+            return item;
+          } else if (item.description) {
+            return item.description;
+          } else {
+            return `День ${item.day || ''}: ${item.title || ''}`;
+          }
+        });
+      }
+    }
+    
+    setTourFormData({
+      title: tour.title,
+      description: tour.description,
+      shortDescription: tour.shortDescription || '',
+      price: tour.price,
+      duration: tour.duration,
+      maxGroupSize: tour.maxGroupSize || 10,
+      difficulty: tour.difficulty,
+      category: tour.category || 'nature',
+      region: tour.region,
+      season: seasonValue,
+      guideId: tour.guide?.id || '',
+      startLocation: startLocationValue,
+      locations: Array.isArray(tour.locations) ? tour.locations : [],
+      itinerary: itineraryValue,
+      included: Array.isArray(tour.included) ? tour.included : [],
+      excluded: Array.isArray(tour.excluded) ? tour.excluded : [],
+      requirements: Array.isArray(tour.requirements) ? tour.requirements : [],
+      tags: Array.isArray(tour.tags) ? tour.tags : [],
+      images: [],
+    });
+    setEditTourDialogOpen(true);
+  };
+
   const handleEditTour = async () => {
     if (!selectedTour) return;
     
@@ -488,7 +624,55 @@ const DashboardPage: React.FC = () => {
       setUpdating(true);
       setError('');
       
-      const response = await apiService.updateAdminTour(selectedTour.id, tourFormData);
+      // Валидация обязательных полей
+      if (!tourFormData.title.trim()) {
+        setError('Название тура обязательно');
+        return;
+      }
+      if (!tourFormData.description.trim()) {
+        setError('Описание тура обязательно');
+        return;
+      }
+      if (!tourFormData.price || tourFormData.price <= 0) {
+        setError('Цена должна быть больше 0');
+        return;
+      }
+      if (!tourFormData.region.trim()) {
+        setError('Регион обязателен');
+        return;
+      }
+      
+      // Подготовка данных для отправки
+      const { images, ...tourData } = tourFormData;
+      
+      // Обработка сезона
+      const processedSeason = tourData.season === 'all' ? ['spring', 'summer', 'autumn', 'winter'] : [tourData.season];
+      
+      // Обработка startLocation
+      const processedStartLocation = tourData.startLocation ? { address: tourData.startLocation } : null;
+      
+      // Обработка itinerary
+      const processedItinerary = tourData.itinerary.length > 0 
+        ? tourData.itinerary.map((item, index) => ({
+            day: index + 1,
+            description: item.trim()
+          })).filter(item => item.description)
+        : null;
+      
+      const processedTourData = {
+        ...tourData,
+        season: processedSeason,
+        startLocation: processedStartLocation,
+        itinerary: processedItinerary,
+        // Убеждаемся, что все массивы корректны
+        locations: tourData.locations.filter(item => item.trim()),
+        included: tourData.included.filter(item => item.trim()),
+        excluded: tourData.excluded.filter(item => item.trim()),
+        requirements: tourData.requirements.filter(item => item.trim()),
+        tags: tourData.tags.filter(item => item.trim()),
+      };
+      
+      const response = await apiService.updateAdminTour(selectedTour.id, processedTourData);
       if (response.status === 'success') {
         setSuccess('Тур успешно обновлен');
         setEditTourDialogOpen(false);
@@ -546,35 +730,43 @@ const DashboardPage: React.FC = () => {
       excluded: [],
       requirements: [],
       tags: [],
+      images: [],
     });
     setCreateTourDialogOpen(true);
   };
 
-  const openEditTourDialog = (tour: TourType) => {
-    setSelectedTour(tour);
-    setTourFormData({
-      title: tour.title,
-      description: tour.description,
-      shortDescription: '',
-      price: tour.price,
-      duration: tour.duration,
-      maxGroupSize: tour.maxParticipants || 10,
-      difficulty: tour.difficulty,
-      category: tour.category || 'nature',
-      region: tour.region,
-      season: 'all',
-      guideId: tour.guide?.id || '',
-      startLocation: '',
-      locations: [],
-      itinerary: tour.itinerary ? tour.itinerary.map(item => 
-        typeof item === 'string' ? item : `День ${item.day}: ${item.title || ''} - ${item.description || ''}`
-      ) : [],
-      included: tour.included || [],
-      excluded: tour.notIncluded || [],
-      requirements: tour.requirements || [],
-      tags: [],
-    });
-    setEditTourDialogOpen(true);
+  // Функции для работы с изображениями
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      const newImages = Array.from(files);
+      setTourFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...newImages]
+      }));
+      
+      // Создаем предварительные URL для просмотра
+      newImages.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setImagePreviewUrls(prev => [...prev, e.target?.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setTourFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+    setImagePreviewUrls(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const clearImages = () => {
+    setTourFormData(prev => ({ ...prev, images: [] }));
+    setImagePreviewUrls([]);
   };
 
   // Фильтрация данных
@@ -1414,6 +1606,15 @@ const DashboardPage: React.FC = () => {
               rows={3}
               required
             />
+            <TextField
+              label="Краткое описание"
+              value={tourFormData.shortDescription}
+              onChange={(e) => setTourFormData({...tourFormData, shortDescription: e.target.value})}
+              fullWidth
+              multiline
+              rows={2}
+              helperText="Краткое описание для карточки тура (максимум 200 символов)"
+            />
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
                 label="Цена (KZT)"
@@ -1454,7 +1655,7 @@ const DashboardPage: React.FC = () => {
                 <Select
                   value={tourFormData.difficulty}
                   label="Сложность"
-                  onChange={(e) => setTourFormData({...tourFormData, difficulty: e.target.value})}
+                  onChange={(e) => setTourFormData({...tourFormData, difficulty: e.target.value as 'easy' | 'moderate' | 'challenging' | 'hard'})}
                 >
                   <MenuItem value="easy">Легкий</MenuItem>
                   <MenuItem value="moderate">Средний</MenuItem>
@@ -1476,6 +1677,20 @@ const DashboardPage: React.FC = () => {
                 </Select>
               </FormControl>
             </Box>
+            <FormControl fullWidth>
+              <InputLabel>Сезон</InputLabel>
+              <Select
+                value={tourFormData.season}
+                label="Сезон"
+                onChange={(e) => setTourFormData({...tourFormData, season: e.target.value})}
+              >
+                <MenuItem value="all">Круглый год</MenuItem>
+                <MenuItem value="spring">Весна</MenuItem>
+                <MenuItem value="summer">Лето</MenuItem>
+                <MenuItem value="autumn">Осень</MenuItem>
+                <MenuItem value="winter">Зима</MenuItem>
+              </Select>
+            </FormControl>
             {guides.length > 0 && (
               <FormControl fullWidth>
                 <InputLabel>Гид</InputLabel>
@@ -1493,6 +1708,120 @@ const DashboardPage: React.FC = () => {
                 </Select>
               </FormControl>
             )}
+            <TextField
+              label="Место начала тура"
+              value={tourFormData.startLocation}
+              onChange={(e) => setTourFormData({...tourFormData, startLocation: e.target.value})}
+              fullWidth
+              placeholder="Например: Алматы, площадь Республики"
+            />
+            <TextField
+              label="Локации (через запятую)"
+              value={tourFormData.locations.join(', ')}
+              onChange={(e) => setTourFormData({...tourFormData, locations: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})}
+              fullWidth
+              placeholder="Например: Медео, Чимбулак, Большое Алматинское озеро"
+            />
+            <TextField
+              label="Маршрут (каждый день с новой строки)"
+              value={tourFormData.itinerary.join('\n')}
+              onChange={(e) => setTourFormData({...tourFormData, itinerary: e.target.value.split('\n').filter(s => s.trim())})}
+              fullWidth
+              multiline
+              rows={4}
+              placeholder="День 1: Прибытие в Алматы&#10;День 2: Экскурсия по городу&#10;День 3: Поход в горы"
+            />
+            <TextField
+              label="Что включено (через запятую)"
+              value={tourFormData.included.join(', ')}
+              onChange={(e) => setTourFormData({...tourFormData, included: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})}
+              fullWidth
+              placeholder="Например: Трансфер, питание, проживание, гид"
+            />
+            <TextField
+              label="Что не включено (через запятую)"
+              value={tourFormData.excluded.join(', ')}
+              onChange={(e) => setTourFormData({...tourFormData, excluded: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})}
+              fullWidth
+              placeholder="Например: Авиабилеты, страховка, личные расходы"
+            />
+            <TextField
+              label="Требования (через запятую)"
+              value={tourFormData.requirements.join(', ')}
+              onChange={(e) => setTourFormData({...tourFormData, requirements: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})}
+              fullWidth
+              placeholder="Например: Удобная обувь, теплая одежда, документы"
+            />
+            <TextField
+              label="Теги (через запятую)"
+              value={tourFormData.tags.join(', ')}
+              onChange={(e) => setTourFormData({...tourFormData, tags: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})}
+              fullWidth
+              placeholder="Например: горы, природа, активный отдых"
+            />
+            
+            {/* Загрузка изображений */}
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>
+                Изображения тура
+              </Typography>
+              <input
+                accept="image/*"
+                style={{ display: 'none' }}
+                id="tour-images-upload"
+                multiple
+                type="file"
+                onChange={handleImageUpload}
+              />
+              <label htmlFor="tour-images-upload">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  startIcon={<CloudUpload />}
+                  sx={{ mb: 2 }}
+                >
+                  Загрузить изображения
+                </Button>
+              </label>
+              
+              {/* Предварительный просмотр изображений */}
+              {imagePreviewUrls.length > 0 && (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                  {imagePreviewUrls.map((url, index) => (
+                    <Box key={index} sx={{ position: 'relative' }}>
+                      <img
+                        src={url}
+                        alt={`Preview ${index + 1}`}
+                        style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 4 }}
+                      />
+                      <IconButton
+                        size="small"
+                        sx={{
+                          position: 'absolute',
+                          top: -8,
+                          right: -8,
+                          backgroundColor: 'error.main',
+                          color: 'white',
+                          '&:hover': { backgroundColor: 'error.dark' }
+                        }}
+                        onClick={() => removeImage(index)}
+                      >
+                        <Close />
+                      </IconButton>
+                    </Box>
+                  ))}
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="error"
+                    onClick={clearImages}
+                    sx={{ alignSelf: 'flex-start' }}
+                  >
+                    Очистить все
+                  </Button>
+                </Box>
+              )}
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions>
@@ -1528,6 +1857,15 @@ const DashboardPage: React.FC = () => {
               rows={3}
               required
             />
+            <TextField
+              label="Краткое описание"
+              value={tourFormData.shortDescription}
+              onChange={(e) => setTourFormData({...tourFormData, shortDescription: e.target.value})}
+              fullWidth
+              multiline
+              rows={2}
+              helperText="Краткое описание для карточки тура (максимум 200 символов)"
+            />
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
                 label="Цена (KZT)"
@@ -1568,7 +1906,7 @@ const DashboardPage: React.FC = () => {
                 <Select
                   value={tourFormData.difficulty}
                   label="Сложность"
-                  onChange={(e) => setTourFormData({...tourFormData, difficulty: e.target.value})}
+                  onChange={(e) => setTourFormData({...tourFormData, difficulty: e.target.value as 'easy' | 'moderate' | 'challenging' | 'hard'})}
                 >
                   <MenuItem value="easy">Легкий</MenuItem>
                   <MenuItem value="moderate">Средний</MenuItem>
@@ -1590,6 +1928,20 @@ const DashboardPage: React.FC = () => {
                 </Select>
               </FormControl>
             </Box>
+            <FormControl fullWidth>
+              <InputLabel>Сезон</InputLabel>
+              <Select
+                value={tourFormData.season}
+                label="Сезон"
+                onChange={(e) => setTourFormData({...tourFormData, season: e.target.value})}
+              >
+                <MenuItem value="all">Круглый год</MenuItem>
+                <MenuItem value="spring">Весна</MenuItem>
+                <MenuItem value="summer">Лето</MenuItem>
+                <MenuItem value="autumn">Осень</MenuItem>
+                <MenuItem value="winter">Зима</MenuItem>
+              </Select>
+            </FormControl>
             {guides.length > 0 && (
               <FormControl fullWidth>
                 <InputLabel>Гид</InputLabel>
@@ -1607,6 +1959,57 @@ const DashboardPage: React.FC = () => {
                 </Select>
               </FormControl>
             )}
+            <TextField
+              label="Место начала тура"
+              value={tourFormData.startLocation}
+              onChange={(e) => setTourFormData({...tourFormData, startLocation: e.target.value})}
+              fullWidth
+              placeholder="Например: Алматы, площадь Республики"
+            />
+            <TextField
+              label="Локации (через запятую)"
+              value={tourFormData.locations.join(', ')}
+              onChange={(e) => setTourFormData({...tourFormData, locations: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})}
+              fullWidth
+              placeholder="Например: Медео, Чимбулак, Большое Алматинское озеро"
+            />
+            <TextField
+              label="Маршрут (каждый день с новой строки)"
+              value={tourFormData.itinerary.join('\n')}
+              onChange={(e) => setTourFormData({...tourFormData, itinerary: e.target.value.split('\n').filter(s => s.trim())})}
+              fullWidth
+              multiline
+              rows={4}
+              placeholder="День 1: Прибытие в Алматы&#10;День 2: Экскурсия по городу&#10;День 3: Поход в горы"
+            />
+            <TextField
+              label="Что включено (через запятую)"
+              value={tourFormData.included.join(', ')}
+              onChange={(e) => setTourFormData({...tourFormData, included: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})}
+              fullWidth
+              placeholder="Например: Трансфер, питание, проживание, гид"
+            />
+            <TextField
+              label="Что не включено (через запятую)"
+              value={tourFormData.excluded.join(', ')}
+              onChange={(e) => setTourFormData({...tourFormData, excluded: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})}
+              fullWidth
+              placeholder="Например: Авиабилеты, страховка, личные расходы"
+            />
+            <TextField
+              label="Требования (через запятую)"
+              value={tourFormData.requirements.join(', ')}
+              onChange={(e) => setTourFormData({...tourFormData, requirements: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})}
+              fullWidth
+              placeholder="Например: Удобная обувь, теплая одежда, документы"
+            />
+            <TextField
+              label="Теги (через запятую)"
+              value={tourFormData.tags.join(', ')}
+              onChange={(e) => setTourFormData({...tourFormData, tags: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})}
+              fullWidth
+              placeholder="Например: горы, природа, активный отдых"
+            />
           </Box>
         </DialogContent>
         <DialogActions>

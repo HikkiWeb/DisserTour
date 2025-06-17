@@ -17,29 +17,29 @@ export interface Tour {
   id: string;
   title: string;
   description: string;
+  shortDescription?: string;
   price: number;
   duration: number;
+  maxGroupSize: number;
   difficulty: 'easy' | 'moderate' | 'challenging' | 'hard';
+  category: string;
   region: string;
-  category?: string;
-  mainImage: string;
-  images?: string[];
-  gallery: string[];
-  maxParticipants: number;
-  rating: number;
-  reviewsCount: number;
-  ratingCount?: number;
-  availableDates: string[];
-  isActive?: boolean;
-  itinerary: {
-    day: number;
-    title: string;
-    description: string;
-  }[];
+  season: string[];
+  images: string[];
+  itinerary?: any; // JSONB поле
   included: string[];
-  notIncluded: string[];
+  excluded: string[];
   requirements: string[];
-  guide: User;
+  rating: number;
+  ratingCount: number;
+  isActive: boolean;
+  guideId?: string;
+  startLocation?: any; // JSONB поле
+  locations: any[]; // ARRAY(JSONB)
+  tags: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  guide?: User;
 }
 
 // День маршрута
@@ -164,4 +164,27 @@ export interface SimplePaginatedResponse<T> {
     };
   };
   message?: string;
+}
+
+// Тип для создания/редактирования тура
+export interface TourFormData {
+  title: string;
+  description: string;
+  shortDescription: string;
+  price: number;
+  duration: number;
+  maxGroupSize: number;
+  difficulty: 'easy' | 'moderate' | 'challenging' | 'hard';
+  category: string;
+  region: string;
+  season: string | string[];
+  guideId: string;
+  startLocation: string | any;
+  locations: string[] | any[];
+  itinerary: string[] | any;
+  included: string[];
+  excluded: string[];
+  requirements: string[];
+  tags: string[];
+  images: File[] | string[];
 } 

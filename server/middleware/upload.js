@@ -12,10 +12,13 @@ if (!fs.existsSync(uploadDir)) {
 // Настройка хранилища
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const type = req.params.type || 'misc';
-    const dir = path.join(uploadDir, type);
+    // Для туров используем отдельную директорию
+    const dir = path.join(uploadDir, 'tours');
+    
+    console.log('📁 Настройка папки назначения:', dir);
     
     if (!fs.existsSync(dir)) {
+      console.log('📂 Создание папки:', dir);
       fs.mkdirSync(dir, { recursive: true });
     }
     
@@ -24,7 +27,15 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    const filename = file.fieldname + '-' + uniqueSuffix + ext;
+    
+    console.log('📝 Генерация имени файла:', {
+      originalname: file.originalname,
+      fieldname: file.fieldname,
+      filename: filename
+    });
+    
+    cb(null, filename);
   },
 });
 
@@ -32,9 +43,17 @@ const storage = multer.diskStorage({
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
   
+  console.log('🔍 Проверка файла:', {
+    originalname: file.originalname,
+    mimetype: file.mimetype,
+    size: file.size
+  });
+  
   if (allowedTypes.includes(file.mimetype)) {
+    console.log('✅ Файл разрешен:', file.originalname);
     cb(null, true);
   } else {
+    console.log('❌ Файл отклонен:', file.originalname, '- неподдерживаемый тип:', file.mimetype);
     cb(new Error('Неподдерживаемый тип файла. Разрешены только JPEG, PNG и WebP.'), false);
   }
 };

@@ -36,8 +36,13 @@ class ApiService {
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
     
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+    // Если body — FormData, не добавляем Content-Type вообще
+    let headers: Record<string, string> = {};
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
+    headers = {
+      ...headers,
       ...(options.headers as Record<string, string>),
     };
 
@@ -348,7 +353,7 @@ class ApiService {
     return this.request<SimplePaginatedResponse<any>>('/admin/tours');
   }
 
-  async createAdminTour(tourData: {
+  async createAdminTour(tourData: FormData | {
     title: string;
     description: string;
     shortDescription?: string;
@@ -358,19 +363,22 @@ class ApiService {
     difficulty?: string;
     category?: string;
     region: string;
-    season?: string;
+    season?: string | string[];
     guideId?: string;
-    startLocation?: string;
+    startLocation?: string | any;
     locations?: string[];
-    itinerary?: string[];
+    itinerary?: string[] | any;
     included?: string[];
     excluded?: string[];
     requirements?: string[];
     tags?: string[];
   }): Promise<ApiResponse<any>> {
+    const isFormData = tourData instanceof FormData;
+    
     return this.request<any>('/admin/tours', {
       method: 'POST',
-      body: JSON.stringify(tourData),
+      headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+      body: isFormData ? tourData : JSON.stringify(tourData),
     });
   }
 
@@ -384,6 +392,14 @@ class ApiService {
   async deleteAdminTour(tourId: string): Promise<ApiResponse<any>> {
     return this.request<any>(`/admin/tours/${tourId}`, {
       method: 'DELETE',
+    });
+  }
+
+  async uploadTourImages(tourId: string, formData: FormData): Promise<ApiResponse<any>> {
+    return this.request<any>(`/admin/tours/${tourId}/images`, {
+      method: 'POST',
+      headers: {}, // Не устанавливаем Content-Type для FormData
+      body: formData,
     });
   }
 
