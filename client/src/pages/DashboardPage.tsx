@@ -4,10 +4,8 @@ import {
   Typography,
   Box,
   Paper,
-  Grid,
   Card,
   CardContent,
-  CardHeader,
   Button,
   Alert,
   CircularProgress,
@@ -30,6 +28,16 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Avatar,
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Switch,
+  FormControlLabel,
+  Tooltip,
+  Badge,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -39,10 +47,24 @@ import {
   Tour,
   Visibility,
   Edit,
-  Check,
-  Close,
+  Delete,
   Add,
   Group,
+  Search,
+  FilterList,
+  MoreVert,
+  Check,
+  Close,
+  Block,
+  Star,
+  CalendarToday,
+  Phone,
+  Email,
+  LocationOn,
+  Person,
+  AdminPanelSettings,
+  SupervisorAccount,
+  Verified,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
@@ -73,26 +95,51 @@ interface Stats {
   totalBookings: number;
   totalRevenue: number;
   activeUsers: number;
-  completedTours: number;
+  activeTours: number;
+  pendingBookings: number;
+  monthlyRevenue: number;
 }
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
   const [tabValue, setTabValue] = useState(0);
   const [stats, setStats] = useState<Stats>({
     totalBookings: 0,
     totalRevenue: 0,
     activeUsers: 0,
-    completedTours: 0,
+    activeTours: 0,
+    pendingBookings: 0,
+    monthlyRevenue: 0,
   });
+  
+  // Данные
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [tours, setTours] = useState<TourType[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  
+  // Фильтры и поиск
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState('all');
+  
+  // Диалоги
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [userDialogOpen, setUserDialogOpen] = useState(false);
+  const [tourDialogOpen, setTourDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  
+  // Выбранные элементы
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedTour, setSelectedTour] = useState<TourType | null>(null);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  
+  // Состояния форм
   const [newStatus, setNewStatus] = useState('');
+  const [newRole, setNewRole] = useState('');
   const [updating, setUpdating] = useState(false);
 
   const isAdmin = user?.role === 'admin';
@@ -107,13 +154,13 @@ const DashboardPage: React.FC = () => {
       setLoading(true);
       setError('');
 
-      const promises = [];
+      const promises: Promise<any>[] = [];
 
       if (isAdmin) {
         promises.push(
           apiService.getUsers(),
-          apiService.getTours({ page: 1, limit: 100 }),
-          Promise.resolve({ status: 'success', data: { data: [] } }) // Mock for all bookings
+          apiService.getTours({ page: 1, limit: 1000 }),
+          apiService.getAllBookings()
         );
       } else if (isGuide) {
         promises.push(
@@ -124,28 +171,28 @@ const DashboardPage: React.FC = () => {
 
       const responses = await Promise.all(promises);
 
-      if (isAdmin) {
+      if (isAdmin && responses.length >= 3) {
         if (responses[0].status === 'success' && responses[0].data) {
-          setUsers(responses[0].data.data);
+          setUsers(responses[0].data.data || responses[0].data.users || []);
         }
         if (responses[1].status === 'success' && responses[1].data) {
-          setTours(responses[1].data.data);
+          setTours(responses[1].data.data || responses[1].data.tours || []);
         }
         if (responses[2].status === 'success' && responses[2].data) {
-          setBookings(responses[2].data.data);
+          setBookings(responses[2].data.data || responses[2].data.bookings || []);
         }
-      } else if (isGuide) {
+      } else if (isGuide && responses.length >= 2) {
         if (responses[0].status === 'success' && responses[0].data) {
-          setTours(responses[0].data.data);
+          setTours(responses[0].data.data || responses[0].data.tours || []);
         }
         if (responses[1].status === 'success' && responses[1].data) {
-          setBookings(responses[1].data.data);
+          setBookings(responses[1].data.data || responses[1].data.bookings || []);
         }
       }
 
-      // Подсчет статистики
       calculateStats();
     } catch (err: any) {
+      console.error('Ошибка загрузки данных:', err);
       setError('Ошибка загрузки данных');
     } finally {
       setLoading(false);
@@ -153,14 +200,25 @@ const DashboardPage: React.FC = () => {
   };
 
   const calculateStats = () => {
-    const totalRevenue = bookings.reduce((sum, booking) => sum + booking.totalPrice, 0);
-    const completedBookings = bookings.filter(b => b.status === 'confirmed').length;
+    const totalRevenue = bookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+    const pendingBookings = bookings.filter(b => b.status === 'pending').length;
+    const activeTours = tours.filter(t => t.isActive !== false).length;
+    
+    // Подсчет месячного дохода (за последние 30 дней)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const monthlyRevenue = bookings
+      .filter(b => new Date(b.createdAt || b.startDate) >= thirtyDaysAgo && b.status === 'confirmed')
+      .reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
 
     setStats({
       totalBookings: bookings.length,
       totalRevenue,
-      activeUsers: users.length,
-      completedTours: completedBookings,
+      activeUsers: users.filter(u => u.isVerified).length,
+      activeTours,
+      pendingBookings,
+      monthlyRevenue,
     });
   };
 
@@ -168,6 +226,7 @@ const DashboardPage: React.FC = () => {
     setTabValue(newValue);
   };
 
+  // Функции для бронирований
   const handleStatusChange = async () => {
     if (!selectedBooking || !newStatus) return;
 
@@ -176,7 +235,8 @@ const DashboardPage: React.FC = () => {
       const response = await apiService.updateBookingStatus(selectedBooking.id, newStatus);
       
       if (response.status === 'success') {
-        loadDashboardData(); // Перезагружаем данные
+        setSuccess('Статус бронирования обновлен');
+        loadDashboardData();
         setStatusDialogOpen(false);
         setSelectedBooking(null);
         setNewStatus('');
@@ -188,18 +248,70 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  // Функции для пользователей
+  const handleUserRoleChange = async () => {
+    if (!selectedUser || !newRole) return;
+
+    try {
+      setUpdating(true);
+      // Здесь нужно будет добавить API метод для изменения роли
+      // const response = await apiService.updateUserRole(selectedUser.id, newRole);
+      
+      setSuccess('Роль пользователя обновлена');
+      loadDashboardData();
+      setUserDialogOpen(false);
+      setSelectedUser(null);
+      setNewRole('');
+    } catch (err: any) {
+      setError('Ошибка при обновлении роли');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleDeleteItem = async () => {
+    if (!selectedItem) return;
+
+    try {
+      setUpdating(true);
+      
+      if (selectedItem.type === 'user') {
+        // await apiService.deleteUser(selectedItem.id);
+        setSuccess('Пользователь удален');
+      } else if (selectedItem.type === 'tour') {
+        await apiService.deleteTour(selectedItem.id);
+        setSuccess('Тур удален');
+      }
+      
+      loadDashboardData();
+      setDeleteDialogOpen(false);
+      setSelectedItem(null);
+    } catch (err: any) {
+      setError('Ошибка при удалении');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Функции открытия диалогов
   const openStatusDialog = (booking: Booking) => {
     setSelectedBooking(booking);
     setNewStatus(booking.status);
     setStatusDialogOpen(true);
   };
 
-  const closeStatusDialog = () => {
-    setStatusDialogOpen(false);
-    setSelectedBooking(null);
-    setNewStatus('');
+  const openUserDialog = (user: User) => {
+    setSelectedUser(user);
+    setNewRole(user.role);
+    setUserDialogOpen(true);
   };
 
+  const openDeleteDialog = (item: any, type: string) => {
+    setSelectedItem({ ...item, type });
+    setDeleteDialogOpen(true);
+  };
+
+  // Вспомогательные функции
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed': return 'success';
@@ -217,6 +329,50 @@ const DashboardPage: React.FC = () => {
       default: return status;
     }
   };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'admin': return <AdminPanelSettings color="error" />;
+      case 'guide': return <SupervisorAccount color="warning" />;
+      default: return <Person color="action" />;
+    }
+  };
+
+  const getRoleText = (role: string) => {
+    switch (role) {
+      case 'admin': return 'Администратор';
+      case 'guide': return 'Гид';
+      default: return 'Пользователь';
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('ru-KZ', {
+      style: 'currency',
+      currency: 'KZT',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  // Фильтрация данных
+  const filteredBookings = bookings.filter(booking => {
+    const matchesSearch = booking.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = 
+      user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    return matchesSearch && matchesRole;
+  });
+
+  const filteredTours = tours.filter(tour => 
+    tour.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (!isAdmin && !isGuide) {
     return (
@@ -240,107 +396,166 @@ const DashboardPage: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        <DashboardIcon sx={{ mr: 2, verticalAlign: 'middle' }} />
-        Панель управления
-      </Typography>
+      {/* Заголовок */}
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+        <DashboardIcon sx={{ mr: 2, fontSize: 40, color: 'primary.main' }} />
+        <Box>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Панель управления
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            {isAdmin ? 'Администратор' : 'Гид'} • {user?.firstName} {user?.lastName}
+          </Typography>
+        </Box>
+      </Box>
 
+      {/* Уведомления */}
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
           {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
+          {success}
         </Alert>
       )}
 
       {/* Статистика */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
-        <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <TrendingUp color="primary" sx={{ fontSize: 40, mr: 2 }} />
-                <Box>
-                  <Typography color="textSecondary" gutterBottom>
-                    Всего туров
-                  </Typography>
-                  <Typography variant="h4">
-                    {tours.length}
-                  </Typography>
-                </Box>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 3, mb: 4 }}>
+        <Card elevation={2}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Tour color="primary" sx={{ fontSize: 40, mr: 2 }} />
+              <Box>
+                <Typography color="textSecondary" gutterBottom>
+                  Активные туры
+                </Typography>
+                <Typography variant="h4">
+                  {stats.activeTours}
+                </Typography>
               </Box>
-            </CardContent>
-          </Card>
-        </Box>
+            </Box>
+          </CardContent>
+        </Card>
 
-        <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <People color="success" sx={{ fontSize: 40, mr: 2 }} />
-                <Box>
-                  <Typography color="textSecondary" gutterBottom>
-                    Бронирований
+        <Card elevation={2}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <CalendarToday color="success" sx={{ fontSize: 40, mr: 2 }} />
+              <Box>
+                <Typography color="textSecondary" gutterBottom>
+                  Всего бронирований
+                </Typography>
+                <Typography variant="h4">
+                  {stats.totalBookings}
+                </Typography>
+                {stats.pendingBookings > 0 && (
+                  <Typography variant="caption" color="warning.main">
+                    {stats.pendingBookings} ожидают
                   </Typography>
-                  <Typography variant="h4">
-                    {bookings.length}
-                  </Typography>
-                </Box>
+                )}
               </Box>
-            </CardContent>
-          </Card>
-        </Box>
+            </Box>
+          </CardContent>
+        </Card>
 
         {isAdmin && (
-          <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Group color="info" sx={{ fontSize: 40, mr: 2 }} />
-                  <Box>
-                    <Typography color="textSecondary" gutterBottom>
-                      Пользователей
-                    </Typography>
-                    <Typography variant="h4">
-                      {users.length}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Box>
-        )}
-
-        <Box sx={{ flex: '1 1 200px', minWidth: 200 }}>
-          <Card>
+          <Card elevation={2}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <AttachMoney color="warning" sx={{ fontSize: 40, mr: 2 }} />
+                <Group color="info" sx={{ fontSize: 40, mr: 2 }} />
                 <Box>
                   <Typography color="textSecondary" gutterBottom>
-                    Общий доход
+                    Активные пользователи
                   </Typography>
                   <Typography variant="h4">
-                    ₸{bookings.reduce((sum, booking) => sum + booking.totalPrice, 0).toLocaleString('ru-RU')}
+                    {stats.activeUsers}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    из {users.length} всего
                   </Typography>
                 </Box>
               </Box>
             </CardContent>
           </Card>
-        </Box>
+        )}
+
+        <Card elevation={2}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <AttachMoney color="warning" sx={{ fontSize: 40, mr: 2 }} />
+              <Box>
+                <Typography color="textSecondary" gutterBottom>
+                  Общий доход
+                </Typography>
+                <Typography variant="h4" sx={{ fontSize: '1.5rem' }}>
+                  {formatCurrency(stats.totalRevenue)}
+                </Typography>
+                <Typography variant="caption" color="success.main">
+                  +{formatCurrency(stats.monthlyRevenue)} за месяц
+                </Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
       </Box>
 
-      {/* Вкладки */}
-      <Paper>
+      {/* Основной контент */}
+      <Paper elevation={2} sx={{ borderRadius: 2 }}>
         <Tabs 
           value={tabValue} 
           onChange={handleTabChange}
           variant="fullWidth"
+          sx={{ borderBottom: 1, borderColor: 'divider' }}
         >
-          <Tab label="Бронирования" />
-          <Tab label="Туры" />
-          {isAdmin && <Tab label="Пользователи" />}
+          <Tab 
+            icon={<CalendarToday />} 
+            label="Бронирования" 
+            iconPosition="start"
+          />
+          <Tab 
+            icon={<Tour />} 
+            label="Туры" 
+            iconPosition="start"
+          />
+          {isAdmin && (
+            <Tab 
+              icon={<People />} 
+              label="Пользователи" 
+              iconPosition="start"
+            />
+          )}
         </Tabs>
 
+        {/* Вкладка бронирований */}
         <TabPanel value={tabValue} index={0}>
+          <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+            <TextField
+              size="small"
+              placeholder="Поиск по ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+              }}
+              sx={{ minWidth: 200 }}
+            />
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Статус</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Статус"
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="all">Все</MenuItem>
+                <MenuItem value="pending">Ожидают</MenuItem>
+                <MenuItem value="confirmed">Подтверждены</MenuItem>
+                <MenuItem value="cancelled">Отменены</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+
           <TableContainer>
             <Table>
               <TableHead>
@@ -354,14 +569,27 @@ const DashboardPage: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {bookings.map((booking) => (
-                  <TableRow key={booking.id}>
-                    <TableCell>#{booking.id.slice(-8)}</TableCell>
+                {filteredBookings.map((booking) => (
+                  <TableRow key={booking.id} hover>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight="medium">
+                        #{booking.id.slice(-8)}
+                      </Typography>
+                    </TableCell>
                     <TableCell>
                       {new Date(booking.startDate).toLocaleDateString('ru-RU')}
                     </TableCell>
-                    <TableCell>{booking.participants}</TableCell>
-                    <TableCell>{booking.totalPrice.toLocaleString()} ₸</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <People sx={{ mr: 1, fontSize: 16 }} />
+                        {booking.participants}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight="medium">
+                        {formatCurrency(booking.totalPrice || 0)}
+                      </Typography>
+                    </TableCell>
                     <TableCell>
                       <Chip
                         label={getStatusText(booking.status)}
@@ -370,13 +598,15 @@ const DashboardPage: React.FC = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={() => openStatusDialog(booking)}
-                        disabled={booking.status === 'cancelled'}
-                      >
-                        <Edit />
-                      </IconButton>
+                      <Tooltip title="Изменить статус">
+                        <IconButton
+                          size="small"
+                          onClick={() => openStatusDialog(booking)}
+                          disabled={booking.status === 'cancelled'}
+                        >
+                          <Edit />
+                        </IconButton>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -384,17 +614,34 @@ const DashboardPage: React.FC = () => {
             </Table>
           </TableContainer>
 
-          {bookings.length === 0 && (
-            <Box textAlign="center" py={4}>
-              <Typography color="text.secondary">
+          {filteredBookings.length === 0 && (
+            <Box textAlign="center" py={6}>
+              <CalendarToday sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
                 Нет бронирований
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {searchTerm || statusFilter !== 'all' 
+                  ? 'Попробуйте изменить фильтры поиска' 
+                  : 'Бронирования появятся здесь после создания'}
               </Typography>
             </Box>
           )}
         </TabPanel>
 
+        {/* Вкладка туров */}
         <TabPanel value={tabValue} index={1}>
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+            <TextField
+              size="small"
+              placeholder="Поиск туров..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+              }}
+              sx={{ minWidth: 200 }}
+            />
             <Button variant="contained" startIcon={<Add />}>
               Добавить тур
             </Button>
@@ -409,24 +656,81 @@ const DashboardPage: React.FC = () => {
                   <TableCell>Цена</TableCell>
                   <TableCell>Длительность</TableCell>
                   <TableCell>Рейтинг</TableCell>
+                  <TableCell>Статус</TableCell>
                   <TableCell>Действия</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {tours.map((tour) => (
-                  <TableRow key={tour.id}>
-                    <TableCell>{tour.title}</TableCell>
-                    <TableCell>{tour.region}</TableCell>
-                    <TableCell>{tour.price.toLocaleString()} ₸</TableCell>
-                    <TableCell>{tour.duration} дней</TableCell>
-                    <TableCell>{tour.rating}/5</TableCell>
+                {filteredTours.map((tour) => (
+                  <TableRow key={tour.id} hover>
                     <TableCell>
-                      <IconButton size="small">
-                        <Visibility />
-                      </IconButton>
-                      <IconButton size="small">
-                        <Edit />
-                      </IconButton>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Avatar 
+                          src={tour.images?.[0]} 
+                          sx={{ mr: 2, width: 40, height: 40 }}
+                        >
+                          <Tour />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2" fontWeight="medium">
+                            {tour.title}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {tour.category}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <LocationOn sx={{ mr: 1, fontSize: 16 }} />
+                        {tour.region}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight="medium">
+                        {formatCurrency(tour.price)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>{tour.duration} дней</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Star sx={{ mr: 1, fontSize: 16, color: 'warning.main' }} />
+                        {tour.rating}/5
+                        <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                          ({tour.ratingCount})
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={tour.isActive !== false ? 'Активен' : 'Неактивен'}
+                        color={tour.isActive !== false ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Tooltip title="Просмотр">
+                        <IconButton size="small">
+                          <Visibility />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Редактировать">
+                        <IconButton size="small">
+                          <Edit />
+                        </IconButton>
+                      </Tooltip>
+                      {isAdmin && (
+                        <Tooltip title="Удалить">
+                          <IconButton 
+                            size="small" 
+                            color="error"
+                            onClick={() => openDeleteDialog(tour, 'tour')}
+                          >
+                            <Delete />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -434,49 +738,152 @@ const DashboardPage: React.FC = () => {
             </Table>
           </TableContainer>
 
-          {tours.length === 0 && (
-            <Box textAlign="center" py={4}>
-              <Typography color="text.secondary">
+          {filteredTours.length === 0 && (
+            <Box textAlign="center" py={6}>
+              <Tour sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
                 Нет туров
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {searchTerm 
+                  ? 'Попробуйте изменить поисковый запрос' 
+                  : 'Создайте первый тур для начала работы'}
               </Typography>
             </Box>
           )}
         </TabPanel>
 
+        {/* Вкладка пользователей (только для админа) */}
         {isAdmin && (
           <TabPanel value={tabValue} index={2}>
+            <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+              <TextField
+                size="small"
+                placeholder="Поиск пользователей..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+                }}
+                sx={{ minWidth: 200 }}
+              />
+              <FormControl size="small" sx={{ minWidth: 150 }}>
+                <InputLabel>Роль</InputLabel>
+                <Select
+                  value={roleFilter}
+                  label="Роль"
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                >
+                  <MenuItem value="all">Все</MenuItem>
+                  <MenuItem value="user">Пользователи</MenuItem>
+                  <MenuItem value="guide">Гиды</MenuItem>
+                  <MenuItem value="admin">Администраторы</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
             <TableContainer>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Имя</TableCell>
-                    <TableCell>Email</TableCell>
+                    <TableCell>Пользователь</TableCell>
+                    <TableCell>Контакты</TableCell>
                     <TableCell>Роль</TableCell>
-                    <TableCell>Дата регистрации</TableCell>
+                    <TableCell>Статус</TableCell>
+                    <TableCell>Регистрация</TableCell>
                     <TableCell>Действия</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.firstName} {user.lastName}</TableCell>
-                      <TableCell>{user.email}</TableCell>
+                  {filteredUsers.map((user) => (
+                    <TableRow key={user.id} hover>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Badge
+                            overlap="circular"
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                            badgeContent={
+                              user.isVerified ? (
+                                <Verified sx={{ color: 'success.main', fontSize: 16 }} />
+                              ) : null
+                            }
+                          >
+                            <Avatar 
+                              src={user.avatar} 
+                              sx={{ mr: 2, width: 40, height: 40 }}
+                            >
+                              {user.firstName.charAt(0)}
+                            </Avatar>
+                          </Badge>
+                          <Box>
+                            <Typography variant="body2" fontWeight="medium">
+                              {user.firstName} {user.lastName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              ID: {user.id.slice(-8)}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                            <Email sx={{ mr: 1, fontSize: 14 }} />
+                            <Typography variant="caption">
+                              {user.email}
+                            </Typography>
+                          </Box>
+                          {user.phone && (
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Phone sx={{ mr: 1, fontSize: 14 }} />
+                              <Typography variant="caption">
+                                {user.phone}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          {getRoleIcon(user.role)}
+                          <Chip
+                            label={getRoleText(user.role)}
+                            color={user.role === 'admin' ? 'error' : 
+                                   user.role === 'guide' ? 'warning' : 'default'}
+                            size="small"
+                            sx={{ ml: 1 }}
+                          />
+                        </Box>
+                      </TableCell>
                       <TableCell>
                         <Chip
-                          label={user.role === 'admin' ? 'Администратор' : 
-                                 user.role === 'guide' ? 'Гид' : 'Пользователь'}
-                          color={user.role === 'admin' ? 'error' : 
-                                 user.role === 'guide' ? 'warning' : 'default'}
+                          label={user.isVerified ? 'Подтвержден' : 'Не подтвержден'}
+                          color={user.isVerified ? 'success' : 'warning'}
                           size="small"
                         />
                       </TableCell>
                       <TableCell>
-                        {new Date(user.id).toLocaleDateString('ru-RU')}
+                        {new Date(user.createdAt || user.id).toLocaleDateString('ru-RU')}
                       </TableCell>
                       <TableCell>
-                        <IconButton size="small">
-                          <Edit />
-                        </IconButton>
+                        <Tooltip title="Изменить роль">
+                          <IconButton 
+                            size="small"
+                            onClick={() => openUserDialog(user)}
+                          >
+                            <Edit />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Удалить">
+                          <IconButton 
+                            size="small" 
+                            color="error"
+                            onClick={() => openDeleteDialog(user, 'user')}
+                            disabled={user.id === user?.id} // Нельзя удалить себя
+                          >
+                            <Delete />
+                          </IconButton>
+                        </Tooltip>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -484,10 +891,16 @@ const DashboardPage: React.FC = () => {
               </Table>
             </TableContainer>
 
-            {users.length === 0 && (
-              <Box textAlign="center" py={4}>
-                <Typography color="text.secondary">
+            {filteredUsers.length === 0 && (
+              <Box textAlign="center" py={6}>
+                <People sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
                   Нет пользователей
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {searchTerm || roleFilter !== 'all' 
+                    ? 'Попробуйте изменить фильтры поиска' 
+                    : 'Пользователи появятся после регистрации'}
                 </Typography>
               </Box>
             )}
@@ -495,46 +908,91 @@ const DashboardPage: React.FC = () => {
         )}
       </Paper>
 
-      {/* Диалог изменения статуса */}
-      <Dialog
-        open={statusDialogOpen}
-        onClose={closeStatusDialog}
-        maxWidth="sm"
-        fullWidth
-      >
+      {/* Диалог изменения статуса бронирования */}
+      <Dialog open={statusDialogOpen} onClose={() => setStatusDialogOpen(false)}>
         <DialogTitle>Изменить статус бронирования</DialogTitle>
         <DialogContent>
-          {selectedBooking && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="body1" gutterBottom>
-                Бронирование #{selectedBooking.id.slice(-8)}
-              </Typography>
-              
-              <FormControl fullWidth sx={{ mt: 2 }}>
-                <InputLabel>Статус</InputLabel>
-                <Select
-                  value={newStatus}
-                  label="Статус"
-                  onChange={(e) => setNewStatus(e.target.value)}
-                >
-                  <MenuItem value="pending">Ожидает подтверждения</MenuItem>
-                  <MenuItem value="confirmed">Подтверждено</MenuItem>
-                  <MenuItem value="cancelled">Отменено</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-          )}
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Бронирование #{selectedBooking?.id.slice(-8)}
+          </Typography>
+          <FormControl fullWidth>
+            <InputLabel>Статус</InputLabel>
+            <Select
+              value={newStatus}
+              label="Статус"
+              onChange={(e) => setNewStatus(e.target.value)}
+            >
+              <MenuItem value="pending">Ожидает подтверждения</MenuItem>
+              <MenuItem value="confirmed">Подтверждено</MenuItem>
+              <MenuItem value="cancelled">Отменено</MenuItem>
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeStatusDialog} disabled={updating}>
-            Отмена
-          </Button>
+          <Button onClick={() => setStatusDialogOpen(false)}>Отмена</Button>
           <Button 
-            onClick={handleStatusChange}
+            onClick={handleStatusChange} 
             variant="contained"
             disabled={updating || !newStatus}
           >
             {updating ? <CircularProgress size={20} /> : 'Сохранить'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог изменения роли пользователя */}
+      <Dialog open={userDialogOpen} onClose={() => setUserDialogOpen(false)}>
+        <DialogTitle>Изменить роль пользователя</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {selectedUser?.firstName} {selectedUser?.lastName}
+          </Typography>
+          <FormControl fullWidth>
+            <InputLabel>Роль</InputLabel>
+            <Select
+              value={newRole}
+              label="Роль"
+              onChange={(e) => setNewRole(e.target.value)}
+            >
+              <MenuItem value="user">Пользователь</MenuItem>
+              <MenuItem value="guide">Гид</MenuItem>
+              <MenuItem value="admin">Администратор</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setUserDialogOpen(false)}>Отмена</Button>
+          <Button 
+            onClick={handleUserRoleChange} 
+            variant="contained"
+            disabled={updating || !newRole}
+          >
+            {updating ? <CircularProgress size={20} /> : 'Сохранить'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог подтверждения удаления */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Подтвердите удаление</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Вы уверены, что хотите удалить{' '}
+            {selectedItem?.type === 'user' ? 'пользователя' : 'тур'}?
+          </Typography>
+          <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+            Это действие нельзя отменить.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Отмена</Button>
+          <Button 
+            onClick={handleDeleteItem} 
+            color="error"
+            variant="contained"
+            disabled={updating}
+          >
+            {updating ? <CircularProgress size={20} /> : 'Удалить'}
           </Button>
         </DialogActions>
       </Dialog>

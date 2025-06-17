@@ -297,6 +297,28 @@ class ApiService {
       method: 'DELETE',
     });
   }
+
+  // Admin Methods
+  async updateUserRole(userId: string, role: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/admin/users/${userId}/role`, {
+      method: 'PUT',
+      body: JSON.stringify({ role }),
+    });
+  }
+
+  async deleteUser(userId: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/admin/users/${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getAllBookings(): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
+    return this.request<SimplePaginatedResponse<any>>('/admin/bookings');
+  }
+
+  async getDashboardStats(): Promise<ApiResponse<any>> {
+    return this.request<any>('/admin/stats');
+  }
 }
 
 export const apiService = new ApiService(); 

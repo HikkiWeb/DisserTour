@@ -21,12 +21,16 @@ export interface Tour {
   duration: number;
   difficulty: 'easy' | 'moderate' | 'challenging' | 'hard';
   region: string;
+  category?: string;
   mainImage: string;
+  images?: string[];
   gallery: string[];
   maxParticipants: number;
   rating: number;
   reviewsCount: number;
+  ratingCount?: number;
   availableDates: string[];
+  isActive?: boolean;
   itinerary: {
     day: number;
     title: string;

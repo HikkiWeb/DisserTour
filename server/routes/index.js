@@ -6,6 +6,8 @@ const tourRoutes = require('./tours');
 const bookingRoutes = require('./bookings');
 const reviewRoutes = require('./reviews');
 const userRoutes = require('./users');
+const adminRoutes = require('./admin');
+const guideRoutes = require('./guide');
 
 // Маршруты аутентификации
 router.use('/auth', authRoutes);
@@ -21,6 +23,12 @@ router.use('/reviews', reviewRoutes);
 
 // Маршруты пользователей
 router.use('/users', userRoutes);
+
+// Маршруты администратора
+router.use('/admin', adminRoutes);
+
+// Маршруты гида
+router.use('/guide', guideRoutes);
 
 // Обработка несуществующих маршрутов
 router.use('*', (req, res) => {
