@@ -20,6 +20,7 @@ import DashboardPage from './pages/DashboardPage';
 // Компоненты макета
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import ChatWidget from './components/AIAssistant/ChatWidget';
 
 // Тема Material-UI
 const theme = createTheme({
@@ -119,6 +120,9 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Layout>
+          
+          {/* AI Ассистент */}
+          <ChatWidget />
         </Router>
       </AuthProvider>
     </ThemeProvider>

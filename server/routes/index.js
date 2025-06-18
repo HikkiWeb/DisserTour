@@ -8,6 +8,7 @@ const reviewRoutes = require('./reviews');
 const userRoutes = require('./users');
 const adminRoutes = require('./admin');
 const guideRoutes = require('./guide');
+const aiRoutes = require('./ai');
 
 // Маршруты аутентификации
 router.use('/auth', authRoutes);
@@ -29,6 +30,9 @@ router.use('/admin', adminRoutes);
 
 // Маршруты гида
 router.use('/guide', guideRoutes);
+
+// Маршруты AI ассистента
+router.use('/ai', aiRoutes);
 
 // Тестовый роут для проверки работы сервера
 router.get('/test', (req, res) => {

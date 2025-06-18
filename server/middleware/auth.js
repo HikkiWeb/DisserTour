@@ -95,8 +95,41 @@ const checkOwnership = (model) => {
   };
 };
 
+// Middleware для опциональной авторизации (не требует токена)
+const optionalAuth = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    if (!token) {
+      // Если токена нет, продолжаем без авторизации
+      req.user = null;
+      return next();
+    }
+
+    const decoded = jwt.verify(token, config.jwt.secret);
+    const user = await User.findByPk(decoded.id);
+
+    if (user && user.isVerified) {
+      req.user = user;
+    } else {
+      req.user = null;
+    }
+
+    next();
+  } catch (error) {
+    // При ошибке с токеном продолжаем без авторизации
+    req.user = null;
+    next();
+  }
+};
+
+// Alias для authenticate
+const verifyToken = authenticate;
+
 module.exports = {
   authenticate,
+  verifyToken,
+  optionalAuth,
   authorize,
   checkOwnership,
 }; 

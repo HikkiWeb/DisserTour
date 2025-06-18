@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 // API Response Types
 interface ApiResponse<T> {
@@ -438,6 +438,42 @@ class ApiService {
       method: 'PUT',
       body: JSON.stringify({ response }),
     });
+  }
+
+  // AI Assistant methods
+  async sendAIMessage(data: {
+    message: string;
+    chatHistory?: any[];
+    userPreferences?: any;
+  }): Promise<ApiResponse<any>> {
+    return this.request<any>('/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getAIRecommendations(preferences: any = {}): Promise<ApiResponse<any>> {
+    return this.request<any>('/ai/recommendations', {
+      method: 'POST',
+      body: JSON.stringify({ preferences }),
+    });
+  }
+
+  async getAIQuickQuestions(context: any = {}): Promise<ApiResponse<any>> {
+    const queryParams = new URLSearchParams();
+    queryParams.append('context', JSON.stringify(context));
+    return this.request<any>(`/ai/quick-questions?${queryParams.toString()}`);
+  }
+
+  async analyzeAIIntent(message: string): Promise<ApiResponse<any>> {
+    return this.request<any>('/ai/analyze-intent', {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+  }
+
+  async getAIStatus(): Promise<ApiResponse<any>> {
+    return this.request<any>('/ai/status');
   }
 }
 
