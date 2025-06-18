@@ -6,7 +6,7 @@ const { bookingValidation } = require('../middleware/validation');
 
 // Получение списка бронирований пользователя
 router.get(
-  '/my-bookings',
+  '/my',
   authenticate,
   BookingController.getUserBookings
 );
@@ -45,11 +45,10 @@ router.patch(
 );
 
 // Отмена бронирования
-router.post(
+router.put(
   '/:id/cancel',
   authenticate,
   checkOwnership('booking'),
-  bookingValidation.create,
   BookingController.cancelBooking
 );
 

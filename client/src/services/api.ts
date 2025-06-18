@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 // API Response Types
 interface ApiResponse<T> {
@@ -144,19 +144,24 @@ class ApiService {
     difficulty?: string;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
-  }): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
+    search?: string;
+    category?: string;
+  }): Promise<ApiResponse<{ tours: any[], pagination: any }>> {
     const queryParams = new URLSearchParams();
     
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
+        if (value !== undefined && value !== null && value !== '') {
+          // Не добавляем экстремальные значения цены
+          if (key === 'maxPrice' && (value as number) >= 1000000) return;
+          if (key === 'minPrice' && (value as number) <= 0) return;
           queryParams.append(key, value.toString());
         }
       });
     }
 
     const endpoint = `/tours${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return this.request<SimplePaginatedResponse<any>>(endpoint);
+    return this.request<{ tours: any[], pagination: any }>(endpoint);
   }
 
   async getTourById(id: string): Promise<ApiResponse<{ tour: any }>> {
@@ -188,8 +193,8 @@ class ApiService {
     });
   }
 
-  async getMyBookings(): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
-    return this.request<SimplePaginatedResponse<any>>('/bookings/my');
+  async getMyBookings(): Promise<ApiResponse<{ bookings: any[], pagination: any }>> {
+    return this.request<{ bookings: any[], pagination: any }>('/bookings/my');
   }
 
   async cancelBooking(bookingId: string, reason: string): Promise<ApiResponse<any>> {
@@ -234,8 +239,8 @@ class ApiService {
     });
   }
 
-  async getMyReviews(): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
-    return this.request<SimplePaginatedResponse<any>>('/reviews/my');
+  async getMyReviews(): Promise<ApiResponse<{ reviews: any[], pagination: any }>> {
+    return this.request<{ reviews: any[], pagination: any }>('/reviews/my');
   }
 
   async getUserStats(): Promise<ApiResponse<any>> {

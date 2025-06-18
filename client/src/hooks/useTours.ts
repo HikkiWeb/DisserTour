@@ -27,9 +27,9 @@ export const useTours = () => {
       const response = await apiService.getTours(filters);
       
       if (response.status === 'success' && response.data) {
-        setTours(response.data.data);
-        setTotalPages((response.data as any).pagination?.pages || 1);
-        setCurrentPage((response.data as any).pagination?.page || 1);
+        setTours(response.data.tours || []);
+        setTotalPages(response.data.pagination?.pages || 1);
+        setCurrentPage(response.data.pagination?.page || 1);
       } else {
         throw new Error(response.message || 'Ошибка загрузки туров');
       }

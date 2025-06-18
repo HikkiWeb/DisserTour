@@ -78,9 +78,10 @@ const BookingsPage: React.FC = () => {
       const response = await apiService.getMyBookings();
       
       if (response.status === 'success' && response.data) {
-        setBookings(response.data.data);
+        setBookings(response.data.bookings || []);
       }
     } catch (err: any) {
+      console.error('Ошибка загрузки бронирований:', err);
       setError('Ошибка загрузки бронирований');
     } finally {
       setLoading(false);

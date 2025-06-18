@@ -155,7 +155,7 @@ const ProfilePage: React.FC = () => {
       setStatsLoading(true);
       const response = await apiService.getMyBookings();
       if (response.status === 'success' && response.data) {
-        setMyBookings(response.data.data);
+        setMyBookings(response.data.bookings || []);
       }
     } catch (error) {
       console.error('Ошибка загрузки бронирований:', error);
@@ -169,7 +169,7 @@ const ProfilePage: React.FC = () => {
       setStatsLoading(true);
       const response = await apiService.getMyReviews();
       if (response.status === 'success' && response.data) {
-        setMyReviews(response.data.data);
+        setMyReviews(response.data.reviews || []);
       }
     } catch (error) {
       console.error('Ошибка загрузки отзывов:', error);

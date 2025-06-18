@@ -15,31 +15,38 @@ const app = express();
 // Middleware
 app.use(helmet()); // Безопасность
 
-// CORS настройки
-app.use(cors({
-  origin: function (origin, callback) {
-    // Разрешаем запросы без origin (например, мобильные приложения)
-    if (!origin) return callback(null, true);
-    
-    // Разрешенные домены
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://localhost:3001',
-      'http://127.0.0.1:3001',
-      config.cors.origin
-    ];
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true
-}));
+// CORS настройки (упрощенные для разработки)
+if (config.nodeEnv === 'development') {
+  app.use(cors({
+    origin: true, // Разрешаем любые origins в разработке
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true
+  }));
+} else {
+  app.use(cors({
+    origin: function (origin, callback) {
+      // Разрешаем запросы без origin (например, мобильные приложения)
+      if (!origin) return callback(null, true);
+      
+      // Разрешенные домены для продакшена
+      const allowedOrigins = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        config.cors.origin
+      ];
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true
+  }));
+}
 app.use(compression()); // Сжатие ответов
 app.use(morgan('dev')); // Логирование
 

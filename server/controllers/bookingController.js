@@ -349,7 +349,8 @@ class BookingController {
   // Отмена бронирования
   static async cancelBooking(req, res, next) {
     try {
-      const { cancellationReason } = req.body;
+      const { reason } = req.body;
+      const cancellationReason = reason;
       const booking = await Booking.findByPk(req.params.id, {
         include: [
           {

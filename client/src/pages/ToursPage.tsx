@@ -36,17 +36,11 @@ const ToursPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const [filters, setFilters] = useState<TourFilters>({
-    search: '',
-    category: '',
-    region: '',
-    difficulty: '',
-    minPrice: 0,
-    maxPrice: 1000000,
     page: 1,
     limit: 12,
   });
 
-  const [priceRange, setPriceRange] = useState<number[]>([0, 1000000]);
+  const [priceRange, setPriceRange] = useState<number[]>([0, 500000]);
   const [showFilters, setShowFilters] = useState(false);
 
   const categories = [
@@ -74,13 +68,15 @@ const ToursPage: React.FC = () => {
   const loadTours = async () => {
     try {
       setLoading(true);
+      setError(''); // Сбрасываем ошибку
       const response = await apiService.getTours(filters);
       
       if (response.status === 'success' && response.data) {
-        setTours(response.data.data);
-        setTotalPages((response.data as any).pagination?.pages || 1);
+        setTours(response.data.tours || []);
+        setTotalPages(response.data.pagination?.pages || 1);
       }
     } catch (err: any) {
+      console.error('Ошибка загрузки туров:', err);
       setError('Ошибка загрузки туров');
     } finally {
       setLoading(false);
@@ -116,17 +112,11 @@ const ToursPage: React.FC = () => {
 
   const clearFilters = () => {
     const clearedFilters: TourFilters = {
-      search: '',
-      category: '',
-      region: '',
-      difficulty: '',
-      minPrice: 0,
-      maxPrice: 1000000,
       page: 1,
       limit: 12,
     };
     setFilters(clearedFilters);
-    setPriceRange([0, 1000000]);
+    setPriceRange([0, 500000]);
     setCurrentPage(1);
   };
 
@@ -142,7 +132,7 @@ const ToursPage: React.FC = () => {
           <TextField
             fullWidth
             label="Поиск туров"
-            value={filters.search}
+            value={filters.search || ''}
             onChange={(e) => handleFilterChange('search', e.target.value)}
             InputProps={{
               startAdornment: <Search color="action" sx={{ mr: 1 }} />,
@@ -162,7 +152,7 @@ const ToursPage: React.FC = () => {
             <FormControl fullWidth>
               <InputLabel>Категория</InputLabel>
               <Select
-                value={filters.category}
+                value={filters.category || ''}
                 label="Категория"
                 onChange={(e) => handleFilterChange('category', e.target.value)}
               >
@@ -178,7 +168,7 @@ const ToursPage: React.FC = () => {
             <FormControl fullWidth>
               <InputLabel>Регион</InputLabel>
               <Select
-                value={filters.region}
+                value={filters.region || ''}
                 label="Регион"
                 onChange={(e) => handleFilterChange('region', e.target.value)}
               >
@@ -194,7 +184,7 @@ const ToursPage: React.FC = () => {
             <FormControl fullWidth>
               <InputLabel>Сложность</InputLabel>
               <Select
-                value={filters.difficulty}
+                value={filters.difficulty || ''}
                 label="Сложность"
                 onChange={(e) => handleFilterChange('difficulty', e.target.value)}
               >
@@ -216,7 +206,7 @@ const ToursPage: React.FC = () => {
                 onChange={handlePriceChange}
                 valueLabelDisplay="auto"
                 min={0}
-                max={1000000}
+                max={500000}
                 step={10000}
                 valueLabelFormat={(value) => `${value.toLocaleString()} ₸`}
               />

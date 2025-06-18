@@ -171,7 +171,9 @@ const seedDatabase = async () => {
       user.password = await bcrypt.hash(user.password, salt);
     }
 
-    const createdUsers = await User.bulkCreate(users);
+    const createdUsers = await User.bulkCreate(users, { 
+      hooks: false // Отключаем хуки чтобы избежать двойного хэширования
+    });
     console.log(`👥 Создано ${createdUsers.length} пользователей`);
 
     // Получаем гидов
