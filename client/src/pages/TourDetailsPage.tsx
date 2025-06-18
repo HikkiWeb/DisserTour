@@ -78,10 +78,11 @@ const TourDetailsPage: React.FC = () => {
       }
 
       if (reviewsResponse.status === 'success' && reviewsResponse.data) {
-        setReviews(reviewsResponse.data.data);
+        setReviews(reviewsResponse.data.data || []);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Ошибка загрузки данных тура');
+      setReviews([]); // Сбрасываем отзывы в случае ошибки
     } finally {
       setLoading(false);
     }
@@ -218,7 +219,7 @@ const TourDetailsPage: React.FC = () => {
             <Typography variant="body1" paragraph>
               {day.description || day}
             </Typography>
-            {index < tour.itinerary.length - 1 && <Divider sx={{ my: 2 }} />}
+            {tour.itinerary && index < tour.itinerary.length - 1 && <Divider sx={{ my: 2 }} />}
           </Box>
         ))}
       </Paper>
@@ -252,7 +253,7 @@ const TourDetailsPage: React.FC = () => {
           Отзывы
         </Typography>
 
-        {reviews.length > 0 ? (
+        {reviews && reviews.length > 0 ? (
           <Grid container spacing={2}>
             {reviews.map((review) => (
               <Grid sx={{ gridColumn: '1 / -1' }} key={review.id}>
@@ -341,7 +342,7 @@ const TourDetailsPage: React.FC = () => {
                   label="Количество участников"
                   onChange={(e) => setParticipants(Number(e.target.value))}
                 >
-                  {[...Array(tour.maxGroupSize)].map((_, i) => (
+                  {[...Array(tour.maxGroupSize || 10)].map((_, i) => (
                     <MenuItem key={i + 1} value={i + 1}>
                       {i + 1}
                     </MenuItem>
