@@ -55,7 +55,7 @@ const Footer: React.FC = () => {
         
         <Box sx={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)', mt: 3, pt: 2 }}>
           <Typography variant="body2" align="center">
-            © 2024 Nomad Route. Все права защищены.
+            © 2025 Nomad Route. Все права защищены.
           </Typography>
         </Box>
       </Container>
