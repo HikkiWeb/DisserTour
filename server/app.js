@@ -73,14 +73,10 @@ app.use('/uploads', (req, res, next) => {
 // Маршруты API
 app.use('/api', routes);
 
-// Обслуживание статических файлов React в продакшене
+// Вместо этого можно добавить простой ответ для корня
 if (config.nodeEnv === 'production') {
-  // Обслуживание статических файлов из client/build
-  app.use(express.static(path.join(__dirname, '../client/build')));
-  
-  // Обработка всех остальных маршрутов - возвращаем index.html
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+  app.get('/', (req, res) => {
+    res.send('API сервер работает');
   });
 }
 
