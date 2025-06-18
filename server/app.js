@@ -73,6 +73,17 @@ app.use('/uploads', (req, res, next) => {
 // Маршруты API
 app.use('/api', routes);
 
+// Обслуживание статических файлов React в продакшене
+if (config.nodeEnv === 'production') {
+  // Обслуживание статических файлов из client/build
+  app.use(express.static(path.join(__dirname, '../client/build')));
+  
+  // Обработка всех остальных маршрутов - возвращаем index.html
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+  });
+}
+
 // Обработка ошибок валидации
 app.use(handleValidationErrors);
 
@@ -90,8 +101,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Запуск сервера
-const PORT = config.port || 5000;
+// Запуск сервера  
+const PORT = process.env.PORT || config.port || 5000;
 
 async function startServer() {
   try {
@@ -102,8 +113,8 @@ async function startServer() {
     }
 
     // Запуск сервера
-    app.listen(PORT, () => {
-      console.log(`Сервер запущен на порту ${PORT}`);
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Сервер запущен на ${config.nodeEnv === 'production' ? 'Railway' : 'localhost'}:${PORT}`);
     });
   } catch (error) {
     console.error('Ошибка при запуске сервера:', error);

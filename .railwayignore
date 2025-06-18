@@ -1,0 +1,40 @@
+# Исключаем папки разработки
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Исключаем временные файлы
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Исключаем IDE файлы
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Исключаем логи
+logs
+*.log
+
+# Исключаем coverage
+coverage/
+
+# Исключаем build файлы разработки (будет собран на Railway)
+client/build
+
+# Исключаем временные файлы
+.tmp/
+tmp/
+
+# Git файлы
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md 

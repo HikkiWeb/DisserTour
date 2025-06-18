@@ -43,6 +43,12 @@ module.exports = {
     credentials: true,
   },
 
+  // Railway specific settings
+  railway: {
+    port: process.env.PORT || 3000,
+    host: '0.0.0.0', // Railway требует прослушивание всех интерфейсов
+  },
+
   // Gemini AI
   gemini: {
     apiKey: process.env.GEMINI_API_KEY,
