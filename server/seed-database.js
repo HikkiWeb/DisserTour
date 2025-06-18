@@ -192,7 +192,7 @@ const seedDatabase = async () => {
         category: 'природа',
         region: 'Алматинская область',
         season: ['spring', 'summer', 'autumn'],
-        images: ['kolsai-1.jpg', 'kolsai-2.jpg', 'kolsai-3.jpg'],
+        images: ['/uploads/tours/images-1750175308972-294962852.webp', '/uploads/tours/images-1750177988578-792732989.jpg', '/uploads/tours/images-1750185863226-684299165.jpg'],
         itinerary: {
           day1: {
             title: 'Первое озеро',
@@ -241,7 +241,7 @@ const seedDatabase = async () => {
         category: 'природа',
         region: 'Алматинская область',
         season: ['spring', 'summer', 'autumn'],
-        images: ['bao-1.jpg', 'bao-2.jpg', 'observatory.jpg'],
+        images: ['/uploads/tours/avatar-1750188359556-682051753.jpg', '/uploads/tours/images-1750175308972-294962852.webp', '/uploads/tours/images-1750177988578-792732989.jpg'],
         itinerary: {
           day1: {
             title: 'БАО и обсерватория',
@@ -284,7 +284,7 @@ const seedDatabase = async () => {
         category: 'культура',
         region: 'Туркестанская область',
         season: ['all'],
-        images: ['turkestan-mausoleum.jpg', 'turkestan-city.jpg', 'silk-road.jpg'],
+        images: ['/uploads/tours/images-1750185863226-684299165.jpg', '/uploads/tours/images-1750189057793-834424658.jpg', '/uploads/tours/images-1750234114477-690363336.jpg'],
         itinerary: {
           day1: {
             title: 'Прибытие в Туркестан',
@@ -339,7 +339,7 @@ const seedDatabase = async () => {
         category: 'природа',
         region: 'Алматинская область',
         season: ['spring', 'summer', 'autumn'],
-        images: ['charyn-canyon.jpg', 'moon-canyon.jpg', 'charyn-river.jpg'],
+        images: ['/uploads/tours/images-1750234134666-446054157.jpg', '/uploads/tours/avatar-1750188359556-682051753.jpg', '/uploads/tours/images-1750175308972-294962852.webp'],
         itinerary: {
           day1: {
             title: 'Каньоны Чарын',
@@ -382,7 +382,7 @@ const seedDatabase = async () => {
         category: 'приключения',
         region: 'Алматинская область',
         season: ['summer'],
-        images: ['furmanov-peak.jpg', 'climbing.jpg', 'mountain-view.jpg'],
+        images: ['/uploads/tours/images-1750177988578-792732989.jpg', '/uploads/tours/images-1750185863226-684299165.jpg', '/uploads/tours/images-1750189057793-834424658.jpg'],
         itinerary: {
           day1: {
             title: 'Переезд к базовому лагерю',
@@ -444,7 +444,7 @@ const seedDatabase = async () => {
         category: 'природа',
         region: 'Карагандинская область',
         season: ['spring', 'summer', 'autumn'],
-        images: ['balkhash-lake.jpg', 'flamingo.jpg', 'balkhash-sunset.jpg'],
+        images: ['/uploads/tours/images-1750189057793-834424658.jpg', '/uploads/tours/images-1750234114477-690363336.jpg', '/uploads/tours/images-1750234134666-446054157.jpg'],
         itinerary: {
           day1: {
             title: 'Прибытие к озеру',
@@ -488,7 +488,7 @@ const seedDatabase = async () => {
         category: 'приключения',
         region: 'Мангистауская область',
         season: ['spring', 'autumn'],
-        images: ['mangystau-1.jpg', 'valley-balls.jpg', 'beket-ata.jpg'],
+        images: ['/uploads/tours/images-1750234114477-690363336.jpg', '/uploads/tours/images-1750234134666-446054157.jpg', '/uploads/tours/avatar-1750188359556-682051753.jpg'],
         itinerary: {
           day1: {
             title: 'Актау - Долина шаров',

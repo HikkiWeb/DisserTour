@@ -38,6 +38,7 @@ import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
 import { Tour, Review, Booking } from '../types';
 import { getDifficultyText } from '../utils/translations';
+import { getImageUrl, handleImageError } from '../utils/imageUtils';
 
 const TourDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -145,8 +146,9 @@ const TourDetailsPage: React.FC = () => {
         <Grid container spacing={4}>
           <Grid sx={{ gridColumn: { xs: '1 / -1', md: '1 / span 6' } }}>
             <img
-              src={tour.images && tour.images.length > 0 ? tour.images[0] : '/placeholder-tour.jpg'}
+              src={getImageUrl(tour.images && tour.images.length > 0 ? tour.images[0] : null)}
               alt={tour.title}
+              onError={handleImageError}
               style={{
                 width: '100%',
                 height: '400px',
@@ -232,8 +234,9 @@ const TourDetailsPage: React.FC = () => {
             {tour.images.slice(1).map((image: string, index: number) => (
               <ImageListItem key={index}>
                 <img
-                  src={image}
+                  src={getImageUrl(image)}
                   alt={`Фото ${index + 1}`}
+                  onError={handleImageError}
                   loading="lazy"
                   style={{ borderRadius: '4px' }}
                 />

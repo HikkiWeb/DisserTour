@@ -169,7 +169,7 @@ class ApiService {
   }
 
   async getTourReviews(tourId: string): Promise<ApiResponse<SimplePaginatedResponse<any>>> {
-    return this.request<SimplePaginatedResponse<any>>(`/tours/${tourId}/reviews`);
+    return this.request<SimplePaginatedResponse<any>>(`/reviews/tour/${tourId}`);
   }
 
   async getPopularTours(): Promise<ApiResponse<{ tours: any[] }>> {
