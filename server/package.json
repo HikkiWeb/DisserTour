@@ -1,7 +1,7 @@
 {
-  "name": "tours-server",
+  "name": "nomad-route-server",
   "version": "1.0.0",
-  "description": "Backend for Tours application",
+  "description": "Backend for Nomad Route application",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",

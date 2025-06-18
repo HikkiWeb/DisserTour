@@ -43,14 +43,32 @@ const Header: React.FC = () => {
   return (
     <AppBar position="static" elevation={1}>
       <Toolbar>
-        <Typography variant="h6" component={Link} to="/" sx={{ 
-          flexGrow: 1, 
-          textDecoration: 'none', 
-          color: 'inherit',
-          fontWeight: 'bold' 
-        }}>
-          Туры Казахстана
-        </Typography>
+        <Box 
+          component={Link} 
+          to="/" 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            textDecoration: 'none', 
+            color: 'inherit',
+            flexGrow: 1 
+          }}
+        >
+          <Box
+            component="img"
+            src="/images/logo_nomad.png"
+            alt="Nomad Route"
+            sx={{ 
+              height: 40, 
+              width: 40, 
+              mr: 2,
+              borderRadius: '50%'
+            }}
+          />
+          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+            Nomad Route
+          </Typography>
+        </Box>
 
         {/* Навигационные ссылки */}
         <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2, mr: 2 }}>

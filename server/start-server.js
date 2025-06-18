@@ -176,7 +176,7 @@ function startServer() {
 
 async function main() {
   log('='.repeat(50), 'cyan');
-  log('    TOURS SERVER - АВТОМАТИЧЕСКАЯ НАСТРОЙКА    ', 'cyan');
+  log('    NOMAD ROUTE SERVER - АВТОМАТИЧЕСКАЯ НАСТРОЙКА    ', 'cyan');
   log('='.repeat(50), 'cyan');
   
   // 1. Создание .env файла

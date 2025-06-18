@@ -16,7 +16,7 @@ const Footer: React.FC = () => {
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
           <Box sx={{ flex: '1 1 300px' }}>
             <Typography variant="h6" gutterBottom>
-              Туры Казахстана
+              Nomad Route
             </Typography>
             <Typography variant="body2">
               Откройте для себя удивительные места Казахстана с нашими профессиональными гидами.
@@ -45,7 +45,7 @@ const Footer: React.FC = () => {
               Контакты
             </Typography>
             <Typography variant="body2">
-              Email: info@tours-kazakhstan.kz
+              Email: info@nomadroute.kz
             </Typography>
             <Typography variant="body2">
               Телефон: +7 (777) 123-45-67
@@ -55,7 +55,7 @@ const Footer: React.FC = () => {
         
         <Box sx={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)', mt: 3, pt: 2 }}>
           <Typography variant="body2" align="center">
-            © 2024 Туры Казахстана. Все права защищены.
+            © 2024 Nomad Route. Все права защищены.
           </Typography>
         </Box>
       </Container>

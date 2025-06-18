@@ -150,6 +150,10 @@ const DashboardPage: React.FC = () => {
 
   // Состояние для предварительного просмотра изображений
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
+  
+  // Состояние для редактирования изображений
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
 
   const isAdmin = user?.role === 'admin';
 
@@ -498,6 +502,12 @@ const DashboardPage: React.FC = () => {
       tags: Array.isArray(tour.tags) ? tour.tags : [],
       images: [],
     });
+    
+    // Обработка существующих изображений
+    setExistingImages(Array.isArray(tour.images) ? tour.images : []);
+    setImagesToDelete([]);
+    setImagePreviewUrls([]);
+    
     setEditTourDialogOpen(true);
   };
 
@@ -556,9 +566,42 @@ const DashboardPage: React.FC = () => {
       };
       
       const response = await apiService.updateAdminTour(selectedItem.id, processedTourData);
+      
       if (response.status === 'success') {
+        const tourId = selectedItem.id;
+        
+        // Удаляем изображения, помеченные для удаления
+        if (imagesToDelete.length > 0) {
+          try {
+            // TODO: Реализовать метод deleteTourImage в API
+            console.log('Изображения для удаления:', imagesToDelete);
+            // for (const imageUrl of imagesToDelete) {
+            //   await apiService.deleteTourImage(tourId, imageUrl);
+            // }
+          } catch (imageError: any) {
+            console.warn('Ошибка удаления изображений:', imageError);
+          }
+        }
+        
+        // Загружаем новые изображения
+        if (images && images.length > 0) {
+          const formData = new FormData();
+          images.forEach((file: File) => {
+            formData.append('images', file);
+          });
+          
+          try {
+            await apiService.uploadTourImages(tourId, formData);
+          } catch (imageError: any) {
+            console.warn('Ошибка загрузки новых изображений:', imageError);
+          }
+        }
+        
         setSuccess('Тур успешно обновлен');
         setEditTourDialogOpen(false);
+        setExistingImages([]);
+        setImagesToDelete([]);
+        setImagePreviewUrls([]);
         loadDashboardData();
       }
     } catch (err: any) {
@@ -614,6 +657,9 @@ const DashboardPage: React.FC = () => {
       tags: [],
       images: [],
     });
+    setExistingImages([]);
+    setImagesToDelete([]);
+    setImagePreviewUrls([]);
     setCreateTourDialogOpen(true);
   };
 
@@ -649,6 +695,19 @@ const DashboardPage: React.FC = () => {
   const clearImages = () => {
     setTourFormData(prev => ({ ...prev, images: [] }));
     setImagePreviewUrls([]);
+  };
+
+  // Функции для работы с существующими изображениями
+  const removeExistingImage = (imageUrl: string) => {
+    setExistingImages(prev => prev.filter(img => img !== imageUrl));
+    setImagesToDelete(prev => [...prev, imageUrl]);
+  };
+
+  const clearAllImages = () => {
+    setTourFormData(prev => ({ ...prev, images: [] }));
+    setImagePreviewUrls([]);
+    setImagesToDelete([...existingImages]);
+    setExistingImages([]);
   };
 
   // Фильтрация данных
@@ -1679,6 +1738,114 @@ const DashboardPage: React.FC = () => {
               fullWidth
               placeholder="Например: горы, природа, активный отдых"
             />
+            
+            {/* Управление изображениями при редактировании */}
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>
+                Управление изображениями
+              </Typography>
+              
+              {/* Существующие изображения */}
+              {existingImages.length > 0 && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Текущие изображения:
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                    {existingImages.map((imageUrl, index) => (
+                      <Box key={index} sx={{ position: 'relative' }}>
+                        <img
+                          src={imageUrl}
+                          alt={`Существующее ${index + 1}`}
+                          style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 4 }}
+                        />
+                        <IconButton
+                          size="small"
+                          sx={{
+                            position: 'absolute',
+                            top: -8,
+                            right: -8,
+                            backgroundColor: 'error.main',
+                            color: 'white',
+                            '&:hover': { backgroundColor: 'error.dark' }
+                          }}
+                          onClick={() => removeExistingImage(imageUrl)}
+                        >
+                          <Close />
+                        </IconButton>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+              
+              {/* Загрузка новых изображений */}
+              <input
+                accept="image/*"
+                style={{ display: 'none' }}
+                id="edit-tour-images-upload"
+                multiple
+                type="file"
+                onChange={handleImageUpload}
+              />
+              <label htmlFor="edit-tour-images-upload">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  startIcon={<CloudUpload />}
+                  sx={{ mb: 2 }}
+                >
+                  Добавить изображения
+                </Button>
+              </label>
+              
+              {/* Предварительный просмотр новых изображений */}
+              {imagePreviewUrls.length > 0 && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Новые изображения:
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                    {imagePreviewUrls.map((url, index) => (
+                      <Box key={index} sx={{ position: 'relative' }}>
+                        <img
+                          src={url}
+                          alt={`Новое ${index + 1}`}
+                          style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 4 }}
+                        />
+                        <IconButton
+                          size="small"
+                          sx={{
+                            position: 'absolute',
+                            top: -8,
+                            right: -8,
+                            backgroundColor: 'error.main',
+                            color: 'white',
+                            '&:hover': { backgroundColor: 'error.dark' }
+                          }}
+                          onClick={() => removeImage(index)}
+                        >
+                          <Close />
+                        </IconButton>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+              
+              {/* Кнопка очистки всех изображений */}
+              {(existingImages.length > 0 || imagePreviewUrls.length > 0) && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  onClick={clearAllImages}
+                  sx={{ alignSelf: 'flex-start' }}
+                >
+                  Очистить все изображения
+                </Button>
+              )}
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions>

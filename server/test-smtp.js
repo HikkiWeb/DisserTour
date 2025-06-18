@@ -43,7 +43,7 @@ async function testSMTP() {
     // Отправляем тестовое письмо
     console.log('📧 Отправка тестового письма...');
     const testEmail = {
-      from: `"Tours Platform Test" <${config.email.user}>`,
+      from: `"Nomad Route Test" <${config.email.user}>`,
       to: config.email.user, // отправляем самому себе
       subject: 'Тест SMTP настроек',
       html: `

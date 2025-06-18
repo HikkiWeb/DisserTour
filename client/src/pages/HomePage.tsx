@@ -138,14 +138,27 @@ const HomePage: React.FC = () => {
                  <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', gap: 4 }}>
              <Box sx={{ flex: 1 }}>
-               <Typography variant="h2" component="h1" gutterBottom fontWeight="bold">
-                 Откройте для себя
-                 <Box component="span" sx={{ color: '#FFD700', display: 'block' }}>
-                   Казахстан
-                 </Box>
-               </Typography>
-               <Typography variant="h5" paragraph sx={{ mb: 4, opacity: 0.9 }}>
-                 Авторские туры по самым красивым местам Центральной Азии
+               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                 <Box
+                   component="img"
+                   src="/images/logo_nomad.png"
+                   alt="Nomad Route"
+                   sx={{ 
+                     height: 80, 
+                     width: 80, 
+                     mr: 3
+                   }}
+                 />
+                 <Typography variant="h2" component="h1" gutterBottom fontWeight="bold">
+                   Nomad Route
+                 </Typography>
+               </Box>
+               <Typography 
+                 variant="h5" 
+                 paragraph 
+                 sx={{ mb: 4, opacity: 0.9, textAlign: 'center' }}
+               >
+                 Откройте для себя красоту Казахстана
                </Typography>
                
                {/* Поиск */}

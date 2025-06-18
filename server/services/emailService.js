@@ -90,7 +90,7 @@ const sendEmail = async (to, template, data) => {
     const { subject, html } = emailTemplates[template](data);
     
     const mailOptions = {
-      from: `"Tours Platform" <${config.email.user}>`,
+      from: `"Nomad Route" <${config.email.user}>`,
       to,
       subject,
       html,
