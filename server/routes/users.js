@@ -2,8 +2,18 @@ const express = require('express');
 const router = express.Router();
 const UserController = require('../controllers/userController');
 const { authenticate, authorize } = require('../middleware/auth');
-const { upload } = require('../middleware/upload');
+const { upload, uploadAvatar } = require('../middleware/upload');
 const { authValidation } = require('../middleware/validation');
+const config = require('../config/config');
+
+// Выбираем middleware загрузки аватара в зависимости от окружения
+const getAvatarUploadMiddleware = () => {
+  if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+    return uploadAvatar.single('avatar');
+  } else {
+    return upload.single('avatar');
+  }
+};
 
 // Получение списка пользователей (только для админа)
 router.get(
@@ -31,7 +41,7 @@ router.get(
 router.patch(
   '/:id?',
   authenticate,
-  upload.single('avatar'),
+  getAvatarUploadMiddleware(),
   authValidation.register,
   UserController.updateUserProfile
 );

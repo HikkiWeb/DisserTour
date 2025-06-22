@@ -2,6 +2,7 @@ const { User, Tour, Booking, Review } = require('../models');
 const { Op } = require('sequelize');
 const { deleteFile } = require('../middleware/upload');
 const bcrypt = require('bcryptjs');
+const config = require('../config/config');
 
 class UserController {
   // Получение списка пользователей (только для админа)
@@ -138,9 +139,15 @@ class UserController {
       if (req.file) {
         // Удаляем старый аватар
         if (user.avatar) {
-          deleteFile(user.avatar);
+          await deleteFile(user.avatar);
         }
-        updateData.avatar = req.file.path;
+        
+        // Сохраняем новый аватар
+        if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+          updateData.avatar = req.file.path;
+        } else {
+          updateData.avatar = `/uploads/avatars/${req.file.filename}`;
+        }
       }
 
       // Если обновляется пароль
@@ -166,7 +173,11 @@ class UserController {
       });
     } catch (error) {
       if (req.file) {
-        deleteFile(req.file.path);
+        if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+          deleteFile(req.file.path);
+        } else {
+          deleteFile(`avatars/${req.file.filename}`);
+        }
       }
       next(error);
     }

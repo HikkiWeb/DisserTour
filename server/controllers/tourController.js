@@ -2,15 +2,28 @@ const { Tour, User, Review, Booking } = require('../models');
 const { Op } = require('sequelize');
 const { deleteFile } = require('../middleware/upload');
 const RecommendationService = require('../services/recommendationService');
+const config = require('../config/config');
 
 class TourController {
   // Создание нового тура
   static async createTour(req, res, next) {
     try {
+      let images = [];
+      
+      if (req.files && req.files.length > 0) {
+        if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+          // В продакшене используем Cloudinary URLs
+          images = req.files.map(file => file.path);
+        } else {
+          // В разработке используем локальные пути
+          images = req.files.map(file => `/uploads/tours/${file.filename}`);
+        }
+      }
+
       const tourData = { 
         ...req.body,
         guideId: req.user.id,
-        images: req.files ? req.files.map(file => `/uploads/tours/${file.filename}`) : [],
+        images: images,
       };
 
       const tour = await Tour.create(tourData);
@@ -22,7 +35,13 @@ class TourController {
     } catch (error) {
       // Удаляем загруженные файлы в случае ошибки
       if (req.files) {
-        req.files.forEach(file => deleteFile(`tours/${file.filename}`));
+        req.files.forEach(file => {
+          if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+            deleteFile(file.path);
+          } else {
+            deleteFile(`tours/${file.filename}`);
+          }
+        });
       }
       next(error);
     }
@@ -172,13 +191,17 @@ class TourController {
       if (req.files && req.files.length > 0) {
         // Удаляем старые изображения
         if (tour.images) {
-          tour.images.forEach(image => {
-            // Преобразуем веб-путь в файловый путь
-            const filePath = image.replace('/uploads/', '');
-            deleteFile(filePath);
-          });
+          for (const image of tour.images) {
+            await deleteFile(image);
+          }
         }
-        updateData.images = req.files.map(file => `/uploads/tours/${file.filename}`);
+        
+        // Добавляем новые изображения
+        if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+          updateData.images = req.files.map(file => file.path);
+        } else {
+          updateData.images = req.files.map(file => `/uploads/tours/${file.filename}`);
+        }
       }
 
       await tour.update(updateData);
@@ -189,7 +212,13 @@ class TourController {
       });
     } catch (error) {
       if (req.files) {
-        req.files.forEach(file => deleteFile(`tours/${file.filename}`));
+        req.files.forEach(file => {
+          if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+            deleteFile(file.path);
+          } else {
+            deleteFile(`tours/${file.filename}`);
+          }
+        });
       }
       next(error);
     }
@@ -232,11 +261,9 @@ class TourController {
 
       // Удаляем изображения
       if (tour.images) {
-        tour.images.forEach(image => {
-          // Преобразуем веб-путь в файловый путь
-          const filePath = image.replace('/uploads/', '');
-          deleteFile(filePath);
-        });
+        for (const image of tour.images) {
+          await deleteFile(image);
+        }
       }
 
       await tour.destroy();

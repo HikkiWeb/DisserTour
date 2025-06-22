@@ -11,7 +11,7 @@ module.exports = {
     port: process.env.DB_PORT || 5432,
     name: process.env.DB_NAME || 'tours_db',
     user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'your_password',
+    password: process.env.DB_PASSWORD || '1234',
   },
 
   // JWT

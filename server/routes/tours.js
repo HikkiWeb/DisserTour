@@ -2,8 +2,18 @@ const express = require('express');
 const router = express.Router();
 const TourController = require('../controllers/tourController');
 const { authenticate, authorize, checkOwnership } = require('../middleware/auth');
-const { upload } = require('../middleware/upload');
+const { upload, uploadTourImages } = require('../middleware/upload');
 const { tourValidation, searchValidation } = require('../middleware/validation');
+const config = require('../config/config');
+
+// Выбираем middleware загрузки в зависимости от окружения
+const getUploadMiddleware = () => {
+  if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+    return uploadTourImages.array('images', 5);
+  } else {
+    return upload.array('images', 5);
+  }
+};
 
 // Получение списка туров с фильтрацией
 router.get('/', searchValidation.tours, TourController.getTours);
@@ -32,7 +42,7 @@ router.post(
   '/',
   authenticate,
   authorize('guide', 'admin'),
-  upload.array('images', 5),
+  getUploadMiddleware(),
   tourValidation.create,
   TourController.createTour
 );
@@ -42,7 +52,7 @@ router.patch(
   '/:id',
   authenticate,
   checkOwnership('tour'),
-  upload.array('images', 5),
+  getUploadMiddleware(),
   tourValidation.update,
   TourController.updateTour
 );

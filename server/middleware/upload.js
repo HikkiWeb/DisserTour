@@ -3,14 +3,17 @@ const path = require('path');
 const fs = require('fs');
 const config = require('../config/config');
 
+// Импортируем Cloudinary сервис
+const cloudinaryService = require('../services/cloudinaryService');
+
 // Создаем директорию для загрузок, если она не существует
 const uploadDir = path.join(__dirname, '..', config.upload.path);
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Настройка хранилища
-const storage = multer.diskStorage({
+// Настройка хранилища для локальной разработки
+const localStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     // Для туров используем отдельную директорию
     const dir = path.join(uploadDir, 'tours');
@@ -58,9 +61,20 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+// Выбираем хранилище в зависимости от окружения
+const getStorage = () => {
+  if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+    console.log('☁️ Используем Cloudinary для хранения файлов');
+    return cloudinaryService.tourStorage;
+  } else {
+    console.log('💾 Используем локальное хранилище');
+    return localStorage;
+  }
+};
+
 // Настройка multer
 const upload = multer({
-  storage: storage,
+  storage: getStorage(),
   fileFilter: fileFilter,
   limits: {
     fileSize: config.upload.maxFileSize, // 5MB
@@ -93,15 +107,42 @@ const handleUploadError = (err, req, res, next) => {
 };
 
 // Middleware для удаления файлов
-const deleteFile = (filePath) => {
-  const fullPath = path.join(uploadDir, filePath);
-  if (fs.existsSync(fullPath)) {
-    fs.unlinkSync(fullPath);
+const deleteFile = async (filePath) => {
+  try {
+    if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+      // Удаляем из Cloudinary
+      await cloudinaryService.deleteFile(filePath);
+    } else {
+      // Удаляем локальный файл
+      const fullPath = path.join(uploadDir, filePath);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+        console.log('🗑️ Локальный файл удален:', fullPath);
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка при удалении файла:', error);
+  }
+};
+
+// Функция для получения URL изображения
+const getImageUrl = (filePath, options = {}) => {
+  if (!filePath) return null;
+  
+  if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+    // Возвращаем Cloudinary URL
+    return cloudinaryService.getImageUrl(filePath, options);
+  } else {
+    // Возвращаем локальный URL
+    return filePath;
   }
 };
 
 module.exports = {
   upload,
+  uploadTourImages: cloudinaryService.uploadTourImages,
+  uploadAvatar: cloudinaryService.uploadAvatar,
   handleUploadError,
   deleteFile,
+  getImageUrl,
 }; 
