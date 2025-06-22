@@ -12,16 +12,15 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Настройка хранилища для локальной разработки
-const localStorage = multer.diskStorage({
+// Настройка хранилища для туров
+const tourLocalStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Для туров используем отдельную директорию
     const dir = path.join(uploadDir, 'tours');
     
-    console.log('📁 Настройка папки назначения:', dir);
+    console.log('📁 Настройка папки назначения для туров:', dir);
     
     if (!fs.existsSync(dir)) {
-      console.log('📂 Создание папки:', dir);
+      console.log('📂 Создание папки для туров:', dir);
       fs.mkdirSync(dir, { recursive: true });
     }
     
@@ -32,7 +31,36 @@ const localStorage = multer.diskStorage({
     const ext = path.extname(file.originalname);
     const filename = file.fieldname + '-' + uniqueSuffix + ext;
     
-    console.log('📝 Генерация имени файла:', {
+    console.log('📝 Генерация имени файла тура:', {
+      originalname: file.originalname,
+      fieldname: file.fieldname,
+      filename: filename
+    });
+    
+    cb(null, filename);
+  },
+});
+
+// Настройка хранилища для аватаров
+const avatarLocalStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(uploadDir, 'avatars');
+    
+    console.log('📁 Настройка папки назначения для аватаров:', dir);
+    
+    if (!fs.existsSync(dir)) {
+      console.log('📂 Создание папки для аватаров:', dir);
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    const filename = file.fieldname + '-' + uniqueSuffix + ext;
+    
+    console.log('📝 Генерация имени файла аватара:', {
       originalname: file.originalname,
       fieldname: file.fieldname,
       filename: filename
@@ -61,25 +89,48 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Выбираем хранилище в зависимости от окружения
-const getStorage = () => {
+// Выбираем хранилище для туров
+const getTourStorage = () => {
   if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
-    console.log('☁️ Используем Cloudinary для хранения файлов');
+    console.log('☁️ Используем Cloudinary для хранения туров');
     return cloudinaryService.tourStorage;
   } else {
-    console.log('💾 Используем локальное хранилище');
-    return localStorage;
+    console.log('💾 Используем локальное хранилище для туров');
+    return tourLocalStorage;
   }
 };
 
-// Настройка multer
-const upload = multer({
-  storage: getStorage(),
+// Выбираем хранилище для аватаров  
+const getAvatarStorage = () => {
+  if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+    console.log('☁️ Используем Cloudinary для хранения аватаров');
+    return cloudinaryService.avatarStorage;
+  } else {
+    console.log('💾 Используем локальное хранилище для аватаров');
+    return avatarLocalStorage;
+  }
+};
+
+// Настройка multer для туров
+const uploadTours = multer({
+  storage: getTourStorage(),
   fileFilter: fileFilter,
   limits: {
     fileSize: config.upload.maxFileSize, // 5MB
   },
 });
+
+// Настройка multer для аватаров
+const uploadAvatars = multer({
+  storage: avatarLocalStorage, // Всегда используем локальное хранилище для аватаров в разработке
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: config.upload.maxFileSize, // 5MB
+  },
+});
+
+// Устаревший upload для совместимости (используем для туров)
+const upload = uploadTours;
 
 // Middleware для обработки ошибок загрузки
 const handleUploadError = (err, req, res, next) => {
@@ -114,7 +165,9 @@ const deleteFile = async (filePath) => {
       await cloudinaryService.deleteFile(filePath);
     } else {
       // Удаляем локальный файл
-      const fullPath = path.join(uploadDir, filePath);
+      // Если путь начинается с /, убираем его для правильного пути к файлу
+      const cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
+      const fullPath = path.join(__dirname, '..', cleanPath);
       if (fs.existsSync(fullPath)) {
         fs.unlinkSync(fullPath);
         console.log('🗑️ Локальный файл удален:', fullPath);
@@ -139,7 +192,9 @@ const getImageUrl = (filePath, options = {}) => {
 };
 
 module.exports = {
-  upload,
+  upload, // Для обратной совместимости (туры)
+  uploadTours,
+  uploadAvatars,
   uploadTourImages: cloudinaryService.uploadTourImages,
   uploadAvatar: cloudinaryService.uploadAvatar,
   handleUploadError,

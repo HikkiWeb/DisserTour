@@ -5,6 +5,8 @@ const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 const config = require('../config/config');
 const { sendEmail } = require('../services/emailService');
+const bcrypt = require('bcryptjs');
+const { deleteFile } = require('../middleware/upload');
 
 class AuthController {
   // Регистрация пользователя
@@ -343,12 +345,19 @@ class AuthController {
       
       // Удаляем старый аватар если он есть
       if (user.avatar) {
-        const { deleteFile } = require('../middleware/upload');
-        deleteFile(user.avatar);
+        await deleteFile(user.avatar);
       }
 
       // Сохраняем путь к новому аватару
-      const avatarPath = `avatars/${req.file.filename}`;
+      let avatarPath;
+      if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+        // В продакшене используем Cloudinary URL
+        avatarPath = req.file.path;
+      } else {
+        // В разработке используем локальный путь
+        avatarPath = `/uploads/avatars/${req.file.filename}`;
+      }
+      
       user.avatar = avatarPath;
       await user.save();
 
@@ -363,11 +372,20 @@ class AuthController {
             phone: user.phone,
             role: user.role,
             avatar: user.avatar,
+            isVerified: user.isVerified,
           },
         },
         message: 'Аватар успешно загружен',
       });
     } catch (error) {
+      // Удаляем загруженный файл в случае ошибки
+      if (req.file) {
+        if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+          await deleteFile(req.file.path);
+        } else {
+          await deleteFile(`uploads/avatars/${req.file.filename}`);
+        }
+      }
       next(error);
     }
   }

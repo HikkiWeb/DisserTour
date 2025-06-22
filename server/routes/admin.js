@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const bodyParser = require('body-parser');
 const { authenticate, authorize } = require('../middleware/auth');
-const { upload, handleUploadError } = require('../middleware/upload');
+const { uploadTours, uploadTourImages, handleUploadError } = require('../middleware/upload');
 const { User, Tour, Booking, Review } = require('../models');
 const emailService = require('../services/emailService');
 const { Op } = require('sequelize');
+const config = require('../config/config');
 
 // Middleware для проверки роли администратора
 const requireAdmin = authorize('admin');
@@ -879,12 +880,21 @@ router.get('/stats', authenticate, requireAdmin, async (req, res) => {
   }
 });
 
+// Функция для выбора middleware загрузки
+const getUploadMiddleware = () => {
+  if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+    return uploadTourImages.array('images', 10);
+  } else {
+    return uploadTours.array('images', 10);
+  }
+};
+
 // Загрузить изображения для тура
 router.post(
   '/tours/:id/images',
   authenticate,
   requireAdmin,
-  upload.array('images', 10),
+  getUploadMiddleware(),
   handleUploadError,
   async (req, res) => {
     try {
@@ -896,7 +906,7 @@ router.post(
       if (req.files && req.files.length > 0) {
         console.log('📋 Детали файлов:');
         req.files.forEach((file, index) => {
-          console.log(`  ${index + 1}. ${file.originalname} -> ${file.filename} (${file.size} bytes)`);
+          console.log(`  ${index + 1}. ${file.originalname} -> ${file.path || file.filename} (${file.size} bytes)`);
         });
       }
       
@@ -912,9 +922,16 @@ router.post(
       console.log('✅ Тур найден:', tour.title);
 
       // Обработка загруженных изображений
-      const newImageUrls = req.files && req.files.length > 0 
-        ? req.files.map(file => `/uploads/tours/${file.filename}`) 
-        : [];
+      let newImageUrls = [];
+      if (req.files && req.files.length > 0) {
+        if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+          // В продакшене используем Cloudinary URLs
+          newImageUrls = req.files.map(file => file.path);
+        } else {
+          // В разработке используем локальные пути
+          newImageUrls = req.files.map(file => `/uploads/tours/${file.filename}`);
+        }
+      }
       
       console.log('🔗 Новые URL изображений:', newImageUrls);
       

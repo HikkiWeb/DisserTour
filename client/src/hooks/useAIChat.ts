@@ -30,6 +30,9 @@ export function useAIChat(): UseChatState & UseChatActions {
   
   // Таймер для эффекта печатания
   const typingTimer = useRef<NodeJS.Timeout | null>(null);
+  // Флаг для предотвращения множественных запросов
+  const isRefreshingQuestions = useRef(false);
+  const isCheckingStatus = useRef(false);
 
   // Функция для добавления сообщения пользователя
   const addUserMessage = useCallback((content: string) => {
@@ -59,8 +62,15 @@ export function useAIChat(): UseChatState & UseChatActions {
     }, delay);
   }, []);
 
-  // Обновление быстрых вопросов
+  // Обновление быстрых вопросов с защитой от частых вызовов
   const refreshQuickQuestions = useCallback(async () => {
+    // Предотвращаем множественные одновременные запросы
+    if (isRefreshingQuestions.current) {
+      return;
+    }
+    
+    isRefreshingQuestions.current = true;
+    
     try {
       const context = {
         currentPage: window.location.pathname,
@@ -79,11 +89,20 @@ export function useAIChat(): UseChatState & UseChatActions {
         "💰 Бюджетные варианты туров",
         "🗺️ Помощь в планировании маршрута"
       ]);
+    } finally {
+      isRefreshingQuestions.current = false;
     }
   }, [user, messages.length]);
 
-  // Проверка статуса AI сервиса
+  // Проверка статуса AI сервиса с защитой от частых вызовов
   const checkServiceStatus = useCallback(async () => {
+    // Предотвращаем множественные одновременные запросы
+    if (isCheckingStatus.current) {
+      return;
+    }
+    
+    isCheckingStatus.current = true;
+    
     try {
       const status = await aiService.getStatus();
       setIsServiceAvailable(status.aiServiceActive);
@@ -94,6 +113,8 @@ export function useAIChat(): UseChatState & UseChatActions {
     } catch (err) {
       setIsServiceAvailable(false);
       console.error('Ошибка проверки статуса AI:', err);
+    } finally {
+      isCheckingStatus.current = false;
     }
   }, []);
 
@@ -157,11 +178,16 @@ export function useAIChat(): UseChatState & UseChatActions {
     refreshQuickQuestions();
   }, [refreshQuickQuestions]);
 
-  // Проверка статуса сервиса при инициализации
+  // Проверка статуса сервиса при инициализации с задержкой
   useEffect(() => {
-    checkServiceStatus();
-    refreshQuickQuestions();
-  }, [checkServiceStatus, refreshQuickQuestions]);
+    // Задержка для предотвращения множественных запросов при быстрых ре-рендерах
+    const timer = setTimeout(() => {
+      checkServiceStatus();
+      refreshQuickQuestions();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []); // Убираем зависимости, чтобы эффект выполнялся только один раз
 
   // Очистка таймера при размонтировании
   useEffect(() => {

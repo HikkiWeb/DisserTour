@@ -27,8 +27,7 @@ import {
   ListItemIcon,
   InputAdornment,
   LinearProgress,
-  Badge,
-  Tooltip,
+
 } from '@mui/material';
 import {
   Person,
@@ -44,7 +43,6 @@ import {
   TrendingUp,
   Assessment,
   History,
-  Verified,
   Visibility,
   VisibilityOff,
   LocationOn,
@@ -341,29 +339,21 @@ const ProfilePage: React.FC = () => {
       <Paper elevation={2} sx={{ mb: 3, p: 3, borderRadius: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
           <Box sx={{ position: 'relative' }}>
-            <Badge
-              overlap="circular"
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              badgeContent={
-                user.isVerified ? (
-                  <Tooltip title="Подтвержденный аккаунт">
-                    <Verified sx={{ color: 'success.main', fontSize: 20 }} />
-                  </Tooltip>
-                ) : null
-              }
+            <Avatar
+              src={user?.avatar ? (
+                user.avatar.startsWith('http') 
+                  ? user.avatar 
+                  : `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${user.avatar.startsWith('/') ? '' : '/'}${user.avatar}`
+              ) : undefined}
+              sx={{ 
+                width: 100, 
+                height: 100,
+                fontSize: '2rem',
+                bgcolor: 'primary.main'
+              }}
             >
-              <Avatar
-                src={user?.avatar ? `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/${user.avatar}` : undefined}
-                sx={{ 
-                  width: 100, 
-                  height: 100,
-                  fontSize: '2rem',
-                  bgcolor: 'primary.main'
-                }}
-              >
-                {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
-              </Avatar>
-            </Badge>
+              {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+            </Avatar>
             <IconButton
               component="label"
               sx={{

@@ -3,7 +3,19 @@ const router = express.Router();
 const AuthController = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 const { authValidation } = require('../middleware/validation');
-const { upload, handleUploadError } = require('../middleware/upload');
+const { uploadAvatars, uploadAvatar, handleUploadError } = require('../middleware/upload');
+const config = require('../config/config');
+
+// Функция для выбора middleware загрузки аватара
+const getAvatarUploadMiddleware = () => {
+  if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+    console.log('🌥️ Используем Cloudinary для аватаров');
+    return uploadAvatar.single('avatar');
+  } else {
+    console.log('💾 Используем локальное хранилище для аватаров');
+    return uploadAvatars.single('avatar');
+  }
+};
 
 // Регистрация нового пользователя
 router.post('/register', authValidation.register, AuthController.register);
@@ -32,7 +44,7 @@ router.put(
 );
 
 // Изменение пароля
-router.post(
+router.put(
   '/change-password',
   authenticate,
   authValidation.changePassword,
@@ -43,12 +55,7 @@ router.post(
 router.post(
   '/upload-avatar',
   authenticate,
-  (req, res, next) => {
-    // Устанавливаем тип для middleware загрузки
-    req.params.type = 'avatars';
-    next();
-  },
-  upload.single('avatar'),
+  uploadAvatars.single('avatar'), // Используем напрямую uploadAvatars в разработке
   handleUploadError,
   AuthController.uploadAvatar
 );
