@@ -247,7 +247,7 @@ class ApiService {
     newPassword: string;
   }): Promise<ApiResponse<any>> {
     return this.request<any>('/auth/change-password', {
-      method: 'POST',
+      method: 'PUT',
       body: JSON.stringify(passwordData),
     });
   }
