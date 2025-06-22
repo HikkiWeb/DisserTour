@@ -9,6 +9,12 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+console.log('☁️ Cloudinary конфигурация:', {
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? '✅ Установлено' : '❌ Не установлено',
+  api_key: process.env.CLOUDINARY_API_KEY ? '✅ Установлено' : '❌ Не установлено',
+  api_secret: process.env.CLOUDINARY_API_SECRET ? '✅ Установлено' : '❌ Не установлено',
+});
+
 // Создание хранилища для туров
 const tourStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
@@ -72,19 +78,29 @@ const deleteFile = async (publicId) => {
   try {
     if (!publicId) return;
     
+    console.log('🗑️ Попытка удаления из Cloudinary:', publicId);
+    
     // Извлекаем public_id из URL если передана полная ссылка
     let cloudinaryPublicId = publicId;
     if (publicId.includes('cloudinary.com')) {
       const urlParts = publicId.split('/');
       const folderIndex = urlParts.findIndex(part => part === 'upload') + 2;
       cloudinaryPublicId = urlParts.slice(folderIndex).join('/').split('.')[0];
+    } else if (publicId.startsWith('/uploads/')) {
+      // Обработка локальных путей типа /uploads/tours/filename.jpg
+      const pathParts = publicId.split('/');
+      const folderName = pathParts[2]; // tours или avatars
+      const fileName = pathParts[3];
+      cloudinaryPublicId = `${folderName}/${fileName.split('.')[0]}`;
     }
     
+    console.log('🗑️ Извлеченный public_id:', cloudinaryPublicId);
+    
     const result = await cloudinary.uploader.destroy(cloudinaryPublicId);
-    console.log('Файл удален из Cloudinary:', result);
+    console.log('✅ Файл удален из Cloudinary:', result);
     return result;
   } catch (error) {
-    console.error('Ошибка при удалении файла из Cloudinary:', error);
+    console.error('❌ Ошибка при удалении файла из Cloudinary:', error);
     throw error;
   }
 };
@@ -93,19 +109,32 @@ const deleteFile = async (publicId) => {
 const getImageUrl = (publicId, options = {}) => {
   if (!publicId) return null;
   
+  // Если это уже полный URL Cloudinary, возвращаем как есть
+  if (publicId.includes('cloudinary.com')) {
+    return publicId;
+  }
+  
   const defaultOptions = {
     width: 800,
     height: 600,
     crop: 'limit',
     quality: 'auto',
+    fetch_format: 'auto',
     ...options
   };
   
-  return cloudinary.url(publicId, defaultOptions);
+  try {
+    return cloudinary.url(publicId, defaultOptions);
+  } catch (error) {
+    console.error('Ошибка генерации Cloudinary URL:', error);
+    return publicId;
+  }
 };
 
 module.exports = {
   cloudinary,
+  tourStorage,
+  avatarStorage,
   uploadTourImages,
   uploadAvatar,
   deleteFile,

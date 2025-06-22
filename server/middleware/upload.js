@@ -91,22 +91,22 @@ const fileFilter = (req, file, cb) => {
 
 // Выбираем хранилище для туров
 const getTourStorage = () => {
-  if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
-    console.log('☁️ Используем Cloudinary для хранения туров');
+  if (config.nodeEnv === 'production') {
+    console.log('☁️ Используем Cloudinary для хранения туров в production');
     return cloudinaryService.tourStorage;
   } else {
-    console.log('💾 Используем локальное хранилище для туров');
+    console.log('💾 Используем локальное хранилище для туров в development');
     return tourLocalStorage;
   }
 };
 
 // Выбираем хранилище для аватаров  
 const getAvatarStorage = () => {
-  if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
-    console.log('☁️ Используем Cloudinary для хранения аватаров');
+  if (config.nodeEnv === 'production') {
+    console.log('☁️ Используем Cloudinary для хранения аватаров в production');
     return cloudinaryService.avatarStorage;
   } else {
-    console.log('💾 Используем локальное хранилище для аватаров');
+    console.log('💾 Используем локальное хранилище для аватаров в development');
     return avatarLocalStorage;
   }
 };
@@ -122,7 +122,7 @@ const uploadTours = multer({
 
 // Настройка multer для аватаров
 const uploadAvatars = multer({
-  storage: avatarLocalStorage, // Всегда используем локальное хранилище для аватаров в разработке
+  storage: getAvatarStorage(),
   fileFilter: fileFilter,
   limits: {
     fileSize: config.upload.maxFileSize, // 5MB
@@ -160,12 +160,12 @@ const handleUploadError = (err, req, res, next) => {
 // Middleware для удаления файлов
 const deleteFile = async (filePath) => {
   try {
-    if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
-      // Удаляем из Cloudinary
+    if (config.nodeEnv === 'production') {
+      // Удаляем из Cloudinary в production
+      console.log('🗑️ Удаление файла из Cloudinary:', filePath);
       await cloudinaryService.deleteFile(filePath);
     } else {
-      // Удаляем локальный файл
-      // Если путь начинается с /, убираем его для правильного пути к файлу
+      // Удаляем локальный файл в development
       const cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
       const fullPath = path.join(__dirname, '..', cleanPath);
       if (fs.existsSync(fullPath)) {
@@ -182,11 +182,11 @@ const deleteFile = async (filePath) => {
 const getImageUrl = (filePath, options = {}) => {
   if (!filePath) return null;
   
-  if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
-    // Возвращаем Cloudinary URL
+  if (config.nodeEnv === 'production') {
+    // Возвращаем Cloudinary URL в production
     return cloudinaryService.getImageUrl(filePath, options);
   } else {
-    // Возвращаем локальный URL
+    // Возвращаем локальный URL в development
     return filePath;
   }
 };

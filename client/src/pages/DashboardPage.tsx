@@ -46,7 +46,6 @@ import {
   People,
   AttachMoney,
   Tour,
-  Visibility,
   Edit,
   Delete,
   Add,
@@ -885,8 +884,8 @@ const DashboardPage: React.FC = () => {
                 </TableHead>
                 <TableBody>
                   {filteredTours.map((tour) => (
-                    <TableRow key={tour.id} hover>
-                      <TableCell>
+                    <TableRow key={tour.id} hover sx={{ height: 72 }}>
+                      <TableCell sx={{ verticalAlign: 'middle' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <Avatar 
                             src={tour.images?.[0]} 
@@ -904,19 +903,19 @@ const DashboardPage: React.FC = () => {
                           </Box>
                         </Box>
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ verticalAlign: 'middle' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <LocationOn sx={{ mr: 1, fontSize: 16 }} />
                           {tour.region}
                         </Box>
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ verticalAlign: 'middle' }}>
                         <Typography variant="body2" fontWeight="medium">
                           {formatCurrency(tour.price)}
                         </Typography>
                       </TableCell>
-                      <TableCell>{tour.duration} дней</TableCell>
-                      <TableCell>
+                      <TableCell sx={{ verticalAlign: 'middle' }}>{tour.duration} дней</TableCell>
+                      <TableCell sx={{ verticalAlign: 'middle' }}>
                         <Chip
                           label={getDifficultyText(tour.difficulty)}
                           color="primary"
@@ -924,7 +923,7 @@ const DashboardPage: React.FC = () => {
                           size="small"
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ verticalAlign: 'middle' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <Star sx={{ mr: 1, fontSize: 16, color: 'warning.main' }} />
                           {tour.rating}/5
@@ -933,38 +932,35 @@ const DashboardPage: React.FC = () => {
                           </Typography>
                         </Box>
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ verticalAlign: 'middle' }}>
                         <Chip
                           label={tour.isActive !== false ? 'Активен' : 'Неактивен'}
                           color={tour.isActive !== false ? 'success' : 'default'}
                           size="small"
                         />
                       </TableCell>
-                      <TableCell>
-                        <Tooltip title="Просмотр">
-                          <IconButton size="small">
-                            <Visibility />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Редактировать">
-                          <IconButton 
-                            size="small"
-                            onClick={() => openEditTourDialog(tour)}
-                          >
-                            <Edit />
-                          </IconButton>
-                        </Tooltip>
-                        {isAdmin && (
-                          <Tooltip title="Удалить">
+                      <TableCell sx={{ verticalAlign: 'middle' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Tooltip title="Редактировать">
                             <IconButton 
-                              size="small" 
-                              color="error"
-                              onClick={() => openDeleteDialog(tour, 'tour')}
+                              size="small"
+                              onClick={() => openEditTourDialog(tour)}
                             >
-                              <Delete />
+                              <Edit />
                             </IconButton>
                           </Tooltip>
-                        )}
+                          {isAdmin && (
+                            <Tooltip title="Удалить">
+                              <IconButton 
+                                size="small" 
+                                color="error"
+                                onClick={() => openDeleteDialog(tour, 'tour')}
+                              >
+                                <Delete />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))}
