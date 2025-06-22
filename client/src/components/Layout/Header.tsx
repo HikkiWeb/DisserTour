@@ -20,6 +20,7 @@ import {
 } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { getAvatarUrl } from '../../utils/imageUtils';
 
 const Header: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -101,7 +102,7 @@ const Header: React.FC = () => {
               color="inherit"
             >
               <Avatar 
-                src={user?.avatar} 
+                src={getAvatarUrl(user?.avatar)}
                 alt={user?.firstName}
                 sx={{ width: 32, height: 32 }}
               >

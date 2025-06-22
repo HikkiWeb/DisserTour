@@ -87,4 +87,42 @@ export const handleImageError = (
   if (!currentSrc.includes('data:image/svg+xml')) {
     target.src = fallbackUrl || defaultFallback;
   }
+};
+
+/**
+ * Формирует корректный URL для аватара пользователя
+ * @param avatar - путь к аватару из базы данных
+ * @returns полный URL аватара или undefined если аватар не задан
+ */
+export const getAvatarUrl = (avatar: string | null | undefined): string | undefined => {
+  if (!avatar) return undefined;
+  
+  // Если это уже полный URL (например, Cloudinary)
+  if (avatar.startsWith('http')) {
+    return avatar;
+  }
+  
+  // Формируем URL для локального файла
+  const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const separator = avatar.startsWith('/') ? '' : '/';
+  return `${baseUrl}${separator}${avatar}`;
+};
+
+/**
+ * Формирует корректный URL для изображения тура
+ * @param image - путь к изображению из базы данных
+ * @returns полный URL изображения или undefined если изображение не задано
+ */
+export const getTourImageUrl = (image: string | null | undefined): string | undefined => {
+  if (!image) return undefined;
+  
+  // Если это уже полный URL
+  if (image.startsWith('http')) {
+    return image;
+  }
+  
+  // Формируем URL для локального файла
+  const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const separator = image.startsWith('/') ? '' : '/';
+  return `${baseUrl}${separator}${image}`;
 }; 

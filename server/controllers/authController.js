@@ -107,7 +107,11 @@ class AuthController {
             email: user.email,
             firstName: user.firstName,
             lastName: user.lastName,
+            phone: user.phone,
             role: user.role,
+            avatar: user.avatar, // Важно: включаем avatar при логине
+            isVerified: user.isVerified,
+            createdAt: user.createdAt,
           },
           token,
         },
@@ -262,9 +266,23 @@ class AuthController {
         });
       }
 
+      // Формируем объект пользователя с корректным avatar
+      const userData = {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        role: user.role,
+        avatar: user.avatar, // Важно: включаем avatar
+        isVerified: user.isVerified,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      };
+
       res.json({
         status: 'success',
-        data: { user },
+        data: { user: userData },
       });
     } catch (error) {
       next(error);

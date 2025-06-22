@@ -58,6 +58,7 @@ import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
 import { User, Booking, Review } from '../types';
 import PasswordField from '../components/PasswordField';
+import { getAvatarUrl } from '../utils/imageUtils';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -337,17 +338,15 @@ const ProfilePage: React.FC = () => {
       <Paper elevation={2} sx={{ mb: 3, p: 3, borderRadius: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
           <Box sx={{ position: 'relative' }}>
-            <Avatar
-              src={user?.avatar ? (
-                user.avatar.startsWith('http') 
-                  ? user.avatar 
-                  : `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${user.avatar.startsWith('/') ? '' : '/'}${user.avatar}`
-              ) : undefined}
-              sx={{ 
-                width: 100, 
-                height: 100,
-                fontSize: '2rem',
-                bgcolor: 'primary.main'
+                                                    <Avatar
+                      src={getAvatarUrl(user?.avatar)}
+                      sx={{ 
+                                                                        width: 140, 
+                        height: 140,
+                        fontSize: '3rem',
+                        background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
+                        boxShadow: '0 12px 24px rgba(102, 126, 234, 0.4)',
+                        border: '4px solid rgba(255,255,255,0.8)'
               }}
             >
               {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
