@@ -270,7 +270,7 @@ const HomePage: React.FC = () => {
                 Привет, {user.firstName}! 👋
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                Мы подобрали для вас туры на основе ваших предпочтений
+                Посмотрите наши туры и выберите тот, который вам понравится
               </Typography>
               <Button 
                 variant="contained" 
