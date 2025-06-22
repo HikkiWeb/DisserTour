@@ -66,7 +66,7 @@ export interface Booking {
   endDate?: string;
   participants: number;
   totalPrice: number;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   specialRequests?: string;
   createdAt: string;
   updatedAt?: string;

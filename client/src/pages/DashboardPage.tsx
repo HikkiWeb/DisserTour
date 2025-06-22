@@ -155,6 +155,11 @@ const DashboardPage: React.FC = () => {
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
 
+  // Состояние для изменения статуса бронирования
+  const [bookingStatusDialogOpen, setBookingStatusDialogOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [newBookingStatus, setNewBookingStatus] = useState<string>('');
+
   const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
@@ -573,11 +578,10 @@ const DashboardPage: React.FC = () => {
         // Удаляем изображения, помеченные для удаления
         if (imagesToDelete.length > 0) {
           try {
-            // TODO: Реализовать метод deleteTourImage в API
-            console.log('Изображения для удаления:', imagesToDelete);
-            // for (const imageUrl of imagesToDelete) {
-            //   await apiService.deleteTourImage(tourId, imageUrl);
-            // }
+            console.log('Удаляем изображения:', imagesToDelete);
+            for (const imageUrl of imagesToDelete) {
+              await apiService.deleteTourImage(tourId, imageUrl);
+            }
           } catch (imageError: any) {
             console.warn('Ошибка удаления изображений:', imageError);
           }
@@ -708,6 +712,59 @@ const DashboardPage: React.FC = () => {
     setImagePreviewUrls([]);
     setImagesToDelete([...existingImages]);
     setExistingImages([]);
+  };
+
+  // Функции для работы со статусом бронирования
+  const openBookingStatusDialog = (booking: any) => {
+    setSelectedBooking(booking);
+    setNewBookingStatus(booking.status);
+    setBookingStatusDialogOpen(true);
+  };
+
+  const closeBookingStatusDialog = () => {
+    setBookingStatusDialogOpen(false);
+    setSelectedBooking(null);
+    setNewBookingStatus('');
+  };
+
+  const handleBookingStatusChange = async () => {
+    if (!selectedBooking || !newBookingStatus) return;
+    
+    try {
+      setUpdating(true);
+      setError('');
+      
+      const response = await apiService.updateBookingStatusAdmin(selectedBooking.id, newBookingStatus);
+      if (response.status === 'success') {
+        setSuccess('Статус бронирования успешно изменен');
+        closeBookingStatusDialog();
+        loadDashboardData();
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Ошибка изменения статуса бронирования');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const getBookingStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed': return 'success';
+      case 'pending': return 'warning';
+      case 'cancelled': return 'error';
+      case 'completed': return 'info';
+      default: return 'default';
+    }
+  };
+
+  const getBookingStatusText = (status: string) => {
+    switch (status) {
+      case 'confirmed': return 'Подтверждено';
+      case 'pending': return 'Ожидание';
+      case 'cancelled': return 'Отменено';
+      case 'completed': return 'Завершено';
+      default: return status;
+    }
   };
 
   // Фильтрация данных
@@ -954,6 +1011,7 @@ const DashboardPage: React.FC = () => {
                     <TableCell>Дата начала</TableCell>
                     <TableCell>Участники</TableCell>
                     <TableCell>Сумма</TableCell>
+                    <TableCell>Статус</TableCell>
                     <TableCell>Действия</TableCell>
                   </TableRow>
                 </TableHead>
@@ -994,6 +1052,22 @@ const DashboardPage: React.FC = () => {
                         </Typography>
                       </TableCell>
                       <TableCell>
+                        <Chip
+                          label={getBookingStatusText(booking.status)}
+                          color={getBookingStatusColor(booking.status) as any}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip title="Изменить статус">
+                          <IconButton 
+                            size="small" 
+                            color="primary"
+                            onClick={() => openBookingStatusDialog(booking)}
+                          >
+                            <Edit />
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title="Удалить">
                           <IconButton 
                             size="small" 
@@ -1856,6 +1930,53 @@ const DashboardPage: React.FC = () => {
             disabled={updating || !tourFormData.title || !tourFormData.description || !tourFormData.price || !tourFormData.region}
           >
             {updating ? <CircularProgress size={20} /> : 'Сохранить'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог изменения статуса бронирования */}
+      <Dialog open={bookingStatusDialogOpen} onClose={closeBookingStatusDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Изменить статус бронирования</DialogTitle>
+        <DialogContent>
+          {selectedBooking && (
+            <Box sx={{ py: 2 }}>
+              <Typography variant="body2" gutterBottom>
+                <strong>Тур:</strong> {selectedBooking.tour?.title}
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                <strong>Клиент:</strong> {selectedBooking.user?.firstName} {selectedBooking.user?.lastName}
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                <strong>Дата начала:</strong> {new Date(selectedBooking.startDate).toLocaleDateString('ru-RU')}
+              </Typography>
+              <Typography variant="body2" gutterBottom sx={{ mb: 3 }}>
+                <strong>Текущий статус:</strong> {getBookingStatusText(selectedBooking.status)}
+              </Typography>
+              
+              <FormControl fullWidth>
+                <InputLabel>Новый статус</InputLabel>
+                <Select
+                  value={newBookingStatus}
+                  label="Новый статус"
+                  onChange={(e) => setNewBookingStatus(e.target.value)}
+                >
+                  <MenuItem value="pending">Ожидание</MenuItem>
+                  <MenuItem value="confirmed">Подтверждено</MenuItem>
+                  <MenuItem value="completed">Завершено</MenuItem>
+                  <MenuItem value="cancelled">Отменено</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeBookingStatusDialog}>Отмена</Button>
+          <Button 
+            onClick={handleBookingStatusChange} 
+            variant="contained"
+            disabled={updating || !newBookingStatus || newBookingStatus === selectedBooking?.status}
+          >
+            {updating ? <CircularProgress size={20} /> : 'Изменить статус'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -960,4 +960,95 @@ router.post(
   }
 );
 
+// Удалить изображение из тура
+router.delete(
+  '/tours/:id/images',
+  authenticate,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { imageUrl } = req.body;
+      
+      console.log('🗑️ Удаление изображения из тура:', id);
+      console.log('📎 URL изображения:', imageUrl);
+      
+      const tour = await Tour.findByPk(id);
+      if (!tour) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Тур не найден'
+        });
+      }
+
+      console.log('✅ Тур найден:', tour.title);
+      
+      // Удаляем изображение из массива
+      const currentImages = Array.isArray(tour.images) ? tour.images : [];
+      const updatedImages = currentImages.filter(img => img !== imageUrl);
+      
+      console.log('📸 Обновленный список изображений:', updatedImages);
+      
+      await tour.update({ images: updatedImages });
+
+      console.log('✅ Изображение успешно удалено из БД');
+
+      res.json({
+        status: 'success',
+        message: 'Изображение успешно удалено',
+        data: { tour }
+      });
+    } catch (error) {
+      console.error('❌ Ошибка при удалении изображения:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Ошибка при удалении изображения'
+      });
+    }
+  }
+);
+
+// Обновить изображения тура (заменить все)
+router.put(
+  '/tours/:id/images',
+  authenticate,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { images } = req.body;
+      
+      console.log('🔄 Обновление изображений тура:', id);
+      console.log('📸 Новые изображения:', images);
+      
+      const tour = await Tour.findByPk(id);
+      if (!tour) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Тур не найден'
+        });
+      }
+
+      console.log('✅ Тур найден:', tour.title);
+      
+      // Обновляем весь массив изображений
+      await tour.update({ images: Array.isArray(images) ? images : [] });
+
+      console.log('✅ Изображения успешно обновлены в БД');
+
+      res.json({
+        status: 'success',
+        message: 'Изображения успешно обновлены',
+        data: { tour }
+      });
+    } catch (error) {
+      console.error('❌ Ошибка при обновлении изображений:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Ошибка при обновлении изображений'
+      });
+    }
+  }
+);
+
 module.exports = router; 

@@ -412,6 +412,20 @@ class ApiService {
     });
   }
 
+  async deleteTourImage(tourId: string, imageUrl: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/admin/tours/${tourId}/images`, {
+      method: 'DELETE',
+      body: JSON.stringify({ imageUrl }),
+    });
+  }
+
+  async updateTourImages(tourId: string, images: string[]): Promise<ApiResponse<any>> {
+    return this.request<any>(`/admin/tours/${tourId}/images`, {
+      method: 'PUT',
+      body: JSON.stringify({ images }),
+    });
+  }
+
   // Бронирования
   async updateBookingStatusAdmin(bookingId: string, status: string): Promise<ApiResponse<any>> {
     return this.request<any>(`/admin/bookings/${bookingId}/status`, {
