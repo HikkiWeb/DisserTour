@@ -882,9 +882,11 @@ router.get('/stats', authenticate, requireAdmin, async (req, res) => {
 
 // Функция для выбора middleware загрузки
 const getUploadMiddleware = () => {
-  if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+  if (config.nodeEnv === 'production') {
+    console.log('🌥️ Используем Cloudinary для админки в production');
     return uploadTourImages.array('images', 10);
   } else {
+    console.log('💾 Используем локальное хранилище для админки в development');
     return uploadTours.array('images', 10);
   }
 };
@@ -924,7 +926,7 @@ router.post(
       // Обработка загруженных изображений
       let newImageUrls = [];
       if (req.files && req.files.length > 0) {
-        if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+        if (config.nodeEnv === 'production') {
           // В продакшене используем Cloudinary URLs
           newImageUrls = req.files.map(file => file.path);
         } else {

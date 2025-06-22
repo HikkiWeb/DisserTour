@@ -8,9 +8,11 @@ const config = require('../config/config');
 
 // Выбираем middleware загрузки аватара в зависимости от окружения
 const getAvatarUploadMiddleware = () => {
-  if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+  if (config.nodeEnv === 'production') {
+    console.log('🌥️ Используем Cloudinary для пользователей в production');
     return uploadAvatar.single('avatar');
   } else {
+    console.log('💾 Используем локальное хранилище для пользователей в development');
     return uploadAvatars.single('avatar');
   }
 };

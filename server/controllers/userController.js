@@ -143,7 +143,7 @@ class UserController {
         }
         
         // Сохраняем новый аватар
-        if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+        if (config.nodeEnv === 'production') {
           updateData.avatar = req.file.path;
         } else {
           updateData.avatar = `/uploads/avatars/${req.file.filename}`;
@@ -173,7 +173,7 @@ class UserController {
       });
     } catch (error) {
       if (req.file) {
-        if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+        if (config.nodeEnv === 'production') {
           deleteFile(req.file.path);
         } else {
           deleteFile(`avatars/${req.file.filename}`);

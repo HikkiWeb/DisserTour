@@ -350,7 +350,7 @@ class AuthController {
 
       // Сохраняем путь к новому аватару
       let avatarPath;
-      if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+      if (config.nodeEnv === 'production') {
         // В продакшене используем Cloudinary URL
         avatarPath = req.file.path;
       } else {
@@ -380,7 +380,7 @@ class AuthController {
     } catch (error) {
       // Удаляем загруженный файл в случае ошибки
       if (req.file) {
-        if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+        if (config.nodeEnv === 'production') {
           await deleteFile(req.file.path);
         } else {
           await deleteFile(`uploads/avatars/${req.file.filename}`);

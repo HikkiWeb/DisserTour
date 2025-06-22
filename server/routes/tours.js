@@ -8,9 +8,11 @@ const config = require('../config/config');
 
 // Выбираем middleware загрузки в зависимости от окружения
 const getUploadMiddleware = () => {
-  if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+  if (config.nodeEnv === 'production') {
+    console.log('🌥️ Используем Cloudinary для туров в production');
     return uploadTourImages.array('images', 5);
   } else {
+    console.log('💾 Используем локальное хранилище для туров в development');
     return uploadTours.array('images', 5);
   }
 };

@@ -11,7 +11,7 @@ class TourController {
       let images = [];
       
       if (req.files && req.files.length > 0) {
-        if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+        if (config.nodeEnv === 'production') {
           // В продакшене используем Cloudinary URLs
           images = req.files.map(file => file.path);
         } else {
@@ -36,7 +36,7 @@ class TourController {
       // Удаляем загруженные файлы в случае ошибки
       if (req.files) {
         req.files.forEach(file => {
-          if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+          if (config.nodeEnv === 'production') {
             deleteFile(file.path);
           } else {
             deleteFile(`tours/${file.filename}`);
@@ -197,7 +197,7 @@ class TourController {
         }
         
         // Добавляем новые изображения
-        if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+        if (config.nodeEnv === 'production') {
           updateData.images = req.files.map(file => file.path);
         } else {
           updateData.images = req.files.map(file => `/uploads/tours/${file.filename}`);
@@ -213,7 +213,7 @@ class TourController {
     } catch (error) {
       if (req.files) {
         req.files.forEach(file => {
-          if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
+          if (config.nodeEnv === 'production') {
             deleteFile(file.path);
           } else {
             deleteFile(`tours/${file.filename}`);

@@ -8,11 +8,11 @@ const config = require('../config/config');
 
 // Функция для выбора middleware загрузки аватара
 const getAvatarUploadMiddleware = () => {
-  if (config.nodeEnv === 'production' && process.env.CLOUDINARY_CLOUD_NAME) {
-    console.log('🌥️ Используем Cloudinary для аватаров');
+  if (config.nodeEnv === 'production') {
+    console.log('🌥️ Используем Cloudinary для аватаров в production');
     return uploadAvatar.single('avatar');
   } else {
-    console.log('💾 Используем локальное хранилище для аватаров');
+    console.log('💾 Используем локальное хранилище для аватаров в development');
     return uploadAvatars.single('avatar');
   }
 };
@@ -55,7 +55,7 @@ router.put(
 router.post(
   '/upload-avatar',
   authenticate,
-  uploadAvatars.single('avatar'), // Используем напрямую uploadAvatars в разработке
+  getAvatarUploadMiddleware(),
   handleUploadError,
   AuthController.uploadAvatar
 );
