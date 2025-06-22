@@ -57,6 +57,7 @@ import * as yup from 'yup';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
 import { User, Booking, Review } from '../types';
+import PasswordField from '../components/PasswordField';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -102,9 +103,6 @@ const ProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [myReviews, setMyReviews] = useState<Review[]>([]);
   const [userStats, setUserStats] = useState<any>(null);
@@ -795,70 +793,31 @@ const ProfilePage: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Box component="form" onSubmit={handleSubmitPassword(onSubmitPassword)} sx={{ pt: 2 }}>
-            <TextField
+            <PasswordField
               {...registerPassword('currentPassword')}
               fullWidth
               label="Текущий пароль"
-              type={showCurrentPassword ? 'text' : 'password'}
               margin="normal"
               error={!!passwordErrors.currentPassword}
               helperText={passwordErrors.currentPassword?.message}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      edge="end"
-                    >
-                      {showCurrentPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
             />
             
-            <TextField
+            <PasswordField
               {...registerPassword('newPassword')}
               fullWidth
               label="Новый пароль"
-              type={showNewPassword ? 'text' : 'password'}
               margin="normal"
               error={!!passwordErrors.newPassword}
               helperText={passwordErrors.newPassword?.message}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      edge="end"
-                    >
-                      {showNewPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
             />
             
-            <TextField
+            <PasswordField
               {...registerPassword('confirmPassword')}
               fullWidth
               label="Подтвердите новый пароль"
-              type={showConfirmPassword ? 'text' : 'password'}
               margin="normal"
               error={!!passwordErrors.confirmPassword}
               helperText={passwordErrors.confirmPassword?.message}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      edge="end"
-                    >
-                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
             />
           </Box>
         </DialogContent>

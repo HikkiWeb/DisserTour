@@ -16,6 +16,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useAuth } from '../context/AuthContext';
 import { RegisterData } from '../types';
+import PasswordField from '../components/PasswordField';
 
 // Схема валидации
 const schema = yup.object({
@@ -163,25 +164,23 @@ const RegisterPage: React.FC = () => {
               helperText={errors.email?.message}
             />
             
-            <TextField
+            <PasswordField
               {...register('password')}
               margin="normal"
               required
               fullWidth
               label="Пароль"
-              type="password"
               autoComplete="new-password"
               error={!!errors.password}
               helperText={errors.password?.message}
             />
 
-            <TextField
+            <PasswordField
               {...register('confirmPassword')}
               margin="normal"
               required
               fullWidth
               label="Подтвердите пароль"
-              type="password"
               autoComplete="new-password"
               error={!!errors.confirmPassword}
               helperText={errors.confirmPassword?.message}

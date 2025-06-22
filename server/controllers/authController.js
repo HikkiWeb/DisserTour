@@ -4,7 +4,7 @@ const { User } = require('../models');
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 const config = require('../config/config');
-const { sendEmail } = require('../services/emailService');
+const emailService = require('../services/emailService');
 const bcrypt = require('bcryptjs');
 const { deleteFile } = require('../middleware/upload');
 
@@ -36,7 +36,11 @@ class AuthController {
       });
 
       // Отправка email для верификации
-      await sendEmail(email, 'verification', verificationToken);
+      await emailService.sendEmail({
+        to: email,
+        template: 'verification',
+        data: verificationToken,
+      });
 
       res.status(201).json({
         status: 'success',
@@ -196,7 +200,11 @@ class AuthController {
       await user.save();
 
       // Отправка email для сброса пароля
-      await sendEmail(email, 'resetPassword', resetToken);
+      await emailService.sendEmail({
+        to: email,
+        template: 'resetPassword',
+        data: resetToken,
+      });
 
       res.json({
         status: 'success',

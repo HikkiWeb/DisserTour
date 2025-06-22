@@ -71,6 +71,7 @@ import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
 import { Booking, Tour as TourType, User } from '../types';
 import { getDifficultyText, getCategoryText, getRoleText } from '../utils/translations';
+import PasswordField from '../components/PasswordField';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -1320,9 +1321,8 @@ const DashboardPage: React.FC = () => {
               fullWidth
               required
             />
-            <TextField
+            <PasswordField
               label="Пароль"
-              type="password"
               value={userFormData.password}
               onChange={(e) => setUserFormData({...userFormData, password: e.target.value})}
               fullWidth

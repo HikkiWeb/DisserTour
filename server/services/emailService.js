@@ -75,6 +75,23 @@ const emailTemplates = {
       </ul>
     `,
   }),
+
+  bookingNotification: (data) => ({
+    subject: 'Новое бронирование тура',
+    html: `
+      <h1>Новое бронирование</h1>
+      <p>Уважаемый(ая) ${data.guideName},</p>
+      <p>Получено новое бронирование для вашего тура "${data.tourTitle}".</p>
+      <h2>Детали бронирования:</h2>
+      <ul>
+        <li>ID бронирования: ${data.bookingId}</li>
+        <li>Дата начала: ${data.startDate ? new Date(data.startDate).toLocaleDateString() : 'Не указана'}</li>
+        <li>Количество участников: ${data.participants}</li>
+        <li>Общая стоимость: ${data.totalPrice} тенге</li>
+      </ul>
+      <p>Пожалуйста, войдите в систему для подтверждения или отклонения бронирования.</p>
+    `,
+  }),
 };
 
 // Функция отправки email

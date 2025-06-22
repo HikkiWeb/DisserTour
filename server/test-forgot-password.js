@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const { User } = require('./models');
-const { sendEmail } = require('./services/emailService');
+const emailService = require('./services/emailService');
 
 async function testForgotPassword() {
   console.log('🧪 Тестирование функционала "Забыли пароль"...\n');
@@ -32,7 +32,11 @@ async function testForgotPassword() {
     console.log(`⏰ Срок действия до: ${resetExpires.toLocaleString()}`);
 
     // 3. Отправляем email
-    await sendEmail(user.email, 'resetPassword', resetToken);
+    await emailService.sendEmail({
+      to: user.email,
+      template: 'resetPassword',
+      data: resetToken,
+    });
     console.log('📧 Email отправлен успешно!');
 
     // 4. Симулируем проверку токена

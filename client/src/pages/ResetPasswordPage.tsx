@@ -4,7 +4,6 @@ import {
   Paper,
   Box,
   Typography,
-  TextField,
   Button,
   Link,
   Alert,
@@ -15,8 +14,8 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { apiService } from '../services/api';
-import { LockReset, Visibility, VisibilityOff } from '@mui/icons-material';
-import { IconButton, InputAdornment } from '@mui/material';
+import { LockReset } from '@mui/icons-material';
+import PasswordField from '../components/PasswordField';
 
 // Схема валидации
 const schema = yup.object({
@@ -41,8 +40,6 @@ const ResetPasswordPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const token = searchParams.get('token');
 
@@ -94,13 +91,7 @@ const ResetPasswordPage: React.FC = () => {
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
 
-  const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword(!showConfirmPassword);
-  };
 
   if (!token) {
     return (
@@ -193,57 +184,29 @@ const ResetPasswordPage: React.FC = () => {
           )}
 
           <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 1, width: '100%' }}>
-            <TextField
+            <PasswordField
               {...register('password')}
               margin="normal"
               required
               fullWidth
               label="Новый пароль"
-              type={showPassword ? 'text' : 'password'}
               autoComplete="new-password"
               autoFocus
               error={!!errors.password}
               helperText={errors.password?.message}
               disabled={isLoading}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={togglePasswordVisibility}
-                      edge="end"
-                      disabled={isLoading}
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
             />
 
-            <TextField
+            <PasswordField
               {...register('confirmPassword')}
               margin="normal"
               required
               fullWidth
               label="Подтвердите новый пароль"
-              type={showConfirmPassword ? 'text' : 'password'}
               autoComplete="new-password"
               error={!!errors.confirmPassword}
               helperText={errors.confirmPassword?.message}
               disabled={isLoading}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={toggleConfirmPasswordVisibility}
-                      edge="end"
-                      disabled={isLoading}
-                    >
-                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
             />
 
             <Button
