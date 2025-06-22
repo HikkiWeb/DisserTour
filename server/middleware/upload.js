@@ -92,8 +92,13 @@ const fileFilter = (req, file, cb) => {
 // Выбираем хранилище для туров
 const getTourStorage = () => {
   if (config.nodeEnv === 'production') {
-    console.log('☁️ Используем Cloudinary для хранения туров в production');
-    return cloudinaryService.tourStorage;
+    if (cloudinaryService.tourStorage) {
+      console.log('☁️ Используем Cloudinary для хранения туров в production');
+      return cloudinaryService.tourStorage;
+    } else {
+      console.log('⚠️ Cloudinary недоступен, используем локальное хранилище для туров');
+      return tourLocalStorage;
+    }
   } else {
     console.log('💾 Используем локальное хранилище для туров в development');
     return tourLocalStorage;
@@ -103,8 +108,13 @@ const getTourStorage = () => {
 // Выбираем хранилище для аватаров  
 const getAvatarStorage = () => {
   if (config.nodeEnv === 'production') {
-    console.log('☁️ Используем Cloudinary для хранения аватаров в production');
-    return cloudinaryService.avatarStorage;
+    if (cloudinaryService.avatarStorage) {
+      console.log('☁️ Используем Cloudinary для хранения аватаров в production');
+      return cloudinaryService.avatarStorage;
+    } else {
+      console.log('⚠️ Cloudinary недоступен, используем локальное хранилище для аватаров');
+      return avatarLocalStorage;
+    }
   } else {
     console.log('💾 Используем локальное хранилище для аватаров в development');
     return avatarLocalStorage;
@@ -195,8 +205,8 @@ module.exports = {
   upload, // Для обратной совместимости (туры)
   uploadTours,
   uploadAvatars,
-  uploadTourImages: cloudinaryService.uploadTourImages,
-  uploadAvatar: cloudinaryService.uploadAvatar,
+  uploadTourImages: cloudinaryService.uploadTourImages || uploadTours, // fallback
+  uploadAvatar: cloudinaryService.uploadAvatar || uploadAvatars, // fallback
   handleUploadError,
   deleteFile,
   getImageUrl,
