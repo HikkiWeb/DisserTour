@@ -312,29 +312,36 @@ class BookingController {
         cancellationReason: status === 'cancelled' ? cancellationReason : null,
       });
 
-      // Отправляем уведомления
-      if (status === 'confirmed') {
-        await emailService.sendEmail({
-          to: booking.user.email,
-          template: 'bookingConfirmation',
-          data: {
-            userName: `${booking.user.firstName} ${booking.user.lastName}`,
-            tourTitle: booking.tour.title,
-            startDate: booking.startDate,
-            participants: booking.participants,
-            totalPrice: booking.totalPrice,
-          },
-        });
-      } else if (status === 'cancelled') {
-        await emailService.sendEmail({
-          to: booking.user.email,
-          template: 'bookingCancellation',
-          data: {
-            userName: `${booking.user.firstName} ${booking.user.lastName}`,
-            tourTitle: booking.tour.title,
-            cancellationReason,
-          },
-        });
+      // Отправляем уведомления (не блокируем основную функциональность при ошибке)
+      try {
+        if (status === 'confirmed') {
+          await emailService.sendEmail({
+            to: booking.user.email,
+            template: 'bookingConfirmation',
+            data: {
+              userName: `${booking.user.firstName} ${booking.user.lastName}`,
+              tourTitle: booking.tour.title,
+              startDate: booking.startDate,
+              participants: booking.participants,
+              totalPrice: booking.totalPrice,
+            },
+          });
+          console.log('✅ Email подтверждения отправлен пользователю');
+        } else if (status === 'cancelled') {
+          await emailService.sendEmail({
+            to: booking.user.email,
+            template: 'bookingCancellation',
+            data: {
+              userName: `${booking.user.firstName} ${booking.user.lastName}`,
+              tourTitle: booking.tour.title,
+              cancellationReason,
+            },
+          });
+          console.log('✅ Email отмены отправлен пользователю');
+        }
+      } catch (emailError) {
+        console.error('❌ Ошибка отправки email уведомления:', emailError.message);
+        // Продолжаем выполнение, не блокируя изменение статуса
       }
 
       res.json({
@@ -349,6 +356,7 @@ class BookingController {
   // Отмена бронирования
   static async cancelBooking(req, res, next) {
     try {
+      console.log('Отмена бронирования:', { bookingId: req.params.id, userId: req.user.id, body: req.body });
       const { reason } = req.body;
       const cancellationReason = reason;
       const booking = await Booking.findByPk(req.params.id, {
@@ -371,11 +379,19 @@ class BookingController {
       });
 
       if (!booking) {
+        console.log('Бронирование не найдено:', req.params.id);
         return res.status(404).json({
           status: 'error',
           message: 'Бронирование не найдено',
         });
       }
+
+      console.log('Найдено бронирование:', { 
+        id: booking.id, 
+        status: booking.status, 
+        userId: booking.userId, 
+        requestUserId: req.user.id 
+      });
 
       // Проверка прав доступа
       if (booking.userId !== req.user.id && req.user.role !== 'admin') {
@@ -386,7 +402,7 @@ class BookingController {
       }
 
       // Проверка возможности отмены
-      if (booking.status !== 'pending') {
+      if (booking.status !== 'pending' && booking.status !== 'confirmed') {
         return res.status(400).json({
           status: 'error',
           message: 'Невозможно отменить бронирование в текущем статусе',
@@ -399,16 +415,22 @@ class BookingController {
         cancellationReason,
       });
 
-      // Отправляем уведомления
-      await emailService.sendEmail({
-        to: booking.tour.guide.email,
-        template: 'bookingCancellation',
-        data: {
-          guideName: `${booking.tour.guide.firstName} ${booking.tour.guide.lastName}`,
-          tourTitle: booking.tour.title,
-          cancellationReason,
-        },
-      });
+      // Отправляем уведомления (не блокируем основную функциональность при ошибке)
+      try {
+        await emailService.sendEmail({
+          to: booking.tour.guide.email,
+          template: 'bookingCancellation',
+          data: {
+            guideName: `${booking.tour.guide.firstName} ${booking.tour.guide.lastName}`,
+            tourTitle: booking.tour.title,
+            cancellationReason,
+          },
+        });
+        console.log('✅ Email уведомление отправлено гиду');
+      } catch (emailError) {
+        console.error('❌ Ошибка отправки email уведомления:', emailError.message);
+        // Продолжаем выполнение, не блокируя отмену бронирования
+      }
 
       res.json({
         status: 'success',

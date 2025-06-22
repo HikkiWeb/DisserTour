@@ -64,9 +64,32 @@ const authorize = (...roles) => {
 };
 
 // Middleware для проверки владельца ресурса
-const checkOwnership = (model) => {
+const checkOwnership = (modelType) => {
   return async (req, res, next) => {
     try {
+      // Импортируем модели
+      const models = require('../models');
+      
+      let model;
+      switch (modelType) {
+        case 'booking':
+          model = models.Booking;
+          break;
+        case 'tour':
+          model = models.Tour;
+          break;
+        default:
+          model = modelType; // Если передана сама модель
+      }
+      
+      if (!model || typeof model.findByPk !== 'function') {
+        console.error('Модель не найдена или не является Sequelize моделью:', modelType);
+        return res.status(500).json({
+          status: 'error',
+          message: 'Внутренняя ошибка сервера',
+        });
+      }
+      
       const resource = await model.findByPk(req.params.id);
       
       if (!resource) {
@@ -78,7 +101,7 @@ const checkOwnership = (model) => {
 
       const isOwner = resource.userId === req.user.id;
       const isAdmin = req.user.role === 'admin';
-      const isGuide = req.user.role === 'guide' && model.name === 'Tour' && resource.guideId === req.user.id;
+      const isGuide = req.user.role === 'guide' && modelType === 'tour' && resource.guideId === req.user.id;
 
       if (!isOwner && !isAdmin && !isGuide) {
         return res.status(403).json({

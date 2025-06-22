@@ -60,6 +60,7 @@ const BookingsPage: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
   const [tabValue, setTabValue] = useState(0);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -97,17 +98,35 @@ const BookingsPage: React.FC = () => {
 
     try {
       setCancelling(true);
+      setError(''); // Очищаем предыдущие ошибки
       
       const response = await apiService.cancelBooking(selectedBooking.id, cancelReason);
       
-      if (response.status === 'success') {
-        loadBookings(); // Перезагружаем список
-        setCancelDialogOpen(false);
-        setCancelReason('');
-        setSelectedBooking(null);
+              if (response.status === 'success') {
+          await loadBookings(); // Перезагружаем список
+          setCancelDialogOpen(false);
+          setCancelReason('');
+          setSelectedBooking(null);
+          setSuccess('Бронирование успешно отменено');
+          // Скрываем сообщение об успехе через 5 секунд
+          setTimeout(() => setSuccess(''), 5000);
+        } else {
+        setError(response.message || 'Ошибка при отмене бронирования');
       }
     } catch (err: any) {
-      setError('Ошибка при отмене бронирования');
+      console.error('Ошибка отмены бронирования:', err);
+      
+      let errorMessage = 'Произошла ошибка при отмене бронирования';
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      setError(errorMessage);
     } finally {
       setCancelling(false);
     }
@@ -132,6 +151,8 @@ const BookingsPage: React.FC = () => {
         return <Pending color="warning" />;
       case 'cancelled':
         return <Cancel color="error" />;
+      case 'completed':
+        return <CheckCircle color="info" />;
       default:
         return <Pending color="disabled" />;
     }
@@ -142,6 +163,7 @@ const BookingsPage: React.FC = () => {
       case 'confirmed': return 'success';
       case 'pending': return 'warning';
       case 'cancelled': return 'error';
+      case 'completed': return 'info';
       default: return 'default';
     }
   };
@@ -151,6 +173,7 @@ const BookingsPage: React.FC = () => {
       case 'confirmed': return 'Подтверждено';
       case 'pending': return 'Ожидает подтверждения';
       case 'cancelled': return 'Отменено';
+      case 'completed': return 'Завершено';
       default: return status;
     }
   };
@@ -165,7 +188,8 @@ const BookingsPage: React.FC = () => {
       case 0: return bookings; // Все
       case 1: return filterBookings('pending'); // Ожидающие
       case 2: return filterBookings('confirmed'); // Подтвержденные
-      case 3: return filterBookings('cancelled'); // Отмененные
+      case 3: return filterBookings('completed'); // Завершенные
+      case 4: return filterBookings('cancelled'); // Отмененные
       default: return bookings;
     }
   };
@@ -260,8 +284,14 @@ const BookingsPage: React.FC = () => {
       </Typography>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
           {error}
+        </Alert>
+      )}
+
+      {success && (
+        <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
+          {success}
         </Alert>
       )}
 
@@ -274,6 +304,7 @@ const BookingsPage: React.FC = () => {
           <Tab label={`Все (${bookings.length})`} />
           <Tab label={`Ожидающие (${filterBookings('pending').length})`} />
           <Tab label={`Подтвержденные (${filterBookings('confirmed').length})`} />
+          <Tab label={`Завершенные (${filterBookings('completed').length})`} />
           <Tab label={`Отмененные (${filterBookings('cancelled').length})`} />
         </Tabs>
 
@@ -323,6 +354,20 @@ const BookingsPage: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={tabValue} index={3}>
+          {filterBookings('completed').length > 0 ? (
+            <Box>
+              {filterBookings('completed').map(renderBookingCard)}
+            </Box>
+          ) : (
+            <Box textAlign="center" py={4}>
+              <Typography variant="h6" color="text.secondary">
+                Нет завершенных бронирований
+              </Typography>
+            </Box>
+          )}
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={4}>
           {filterBookings('cancelled').length > 0 ? (
             <Box>
               {filterBookings('cancelled').map(renderBookingCard)}

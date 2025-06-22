@@ -35,30 +35,29 @@ const emailTemplates = {
     `,
   }),
   
-  bookingConfirmation: (booking) => ({
+  bookingConfirmation: (data) => ({
     subject: 'Подтверждение бронирования',
     html: `
       <h1>Бронирование подтверждено</h1>
-      <p>Уважаемый(ая) ${booking.user.firstName} ${booking.user.lastName},</p>
-      <p>Ваше бронирование тура "${booking.tour.title}" подтверждено.</p>
+      <p>Уважаемый(ая) ${data.userName},</p>
+      <p>Ваше бронирование тура "${data.tourTitle}" подтверждено.</p>
       <h2>Детали бронирования:</h2>
       <ul>
-        <li>Дата начала: ${new Date(booking.startDate).toLocaleDateString()}</li>
-        <li>Дата окончания: ${new Date(booking.endDate).toLocaleDateString()}</li>
-        <li>Количество участников: ${booking.participants}</li>
-        <li>Общая стоимость: ${booking.totalPrice} тенге</li>
+        <li>Дата начала: ${data.startDate ? new Date(data.startDate).toLocaleDateString() : 'Не указана'}</li>
+        <li>Количество участников: ${data.participants}</li>
+        <li>Общая стоимость: ${data.totalPrice} тенге</li>
       </ul>
       <p>Спасибо за выбор нашей платформы!</p>
     `,
   }),
   
-  bookingCancellation: (booking) => ({
+  bookingCancellation: (data) => ({
     subject: 'Отмена бронирования',
     html: `
       <h1>Бронирование отменено</h1>
-      <p>Уважаемый(ая) ${booking.user.firstName} ${booking.user.lastName},</p>
-      <p>Ваше бронирование тура "${booking.tour.title}" было отменено.</p>
-      <p>Причина отмены: ${booking.cancellationReason}</p>
+      <p>Уважаемый(ая) ${data.userName || data.guideName || 'Пользователь'},</p>
+      <p>Бронирование тура "${data.tourTitle}" было отменено.</p>
+      <p>Причина отмены: ${data.cancellationReason}</p>
       <p>Если у вас возникли вопросы, пожалуйста, свяжитесь с нами.</p>
     `,
   }),
@@ -79,12 +78,32 @@ const emailTemplates = {
 };
 
 // Функция отправки email
-const sendEmail = async (to, template, data) => {
+const sendEmail = async (params) => {
   try {
+    // Поддерживаем два формата вызова: старый (to, template, data) и новый ({ to, template, data })
+    let to, template, data;
+    
+    if (typeof params === 'string') {
+      // Старый формат: sendEmail(to, template, data)
+      to = arguments[0];
+      template = arguments[1];
+      data = arguments[2];
+    } else {
+      // Новый формат: sendEmail({ to, template, data })
+      to = params.to;
+      template = params.template;
+      data = params.data;
+    }
+
     // Проверяем настройки SMTP
     if (!config.email.user || !config.email.pass) {
       console.error('❌ SMTP настройки не установлены. Проверьте переменные SMTP_USER и SMTP_PASS в .env файле');
       throw new Error('SMTP настройки не установлены');
+    }
+
+    // Проверяем, что шаблон существует
+    if (!emailTemplates[template]) {
+      throw new Error(`emailTemplates[${template}] is not a function - шаблон не найден`);
     }
 
     const { subject, html } = emailTemplates[template](data);

@@ -51,12 +51,17 @@ class ApiService {
     }
 
     try {
+      console.log('Отправка запроса:', { url, method: options.method, headers });
+      
       const response = await fetch(url, {
         ...options,
         headers,
       });
 
+      console.log('Получен ответ:', { status: response.status, statusText: response.statusText });
+
       const data = await response.json();
+      console.log('Данные ответа:', data);
 
       if (!response.ok) {
         throw {
@@ -69,7 +74,7 @@ class ApiService {
 
       return data;
     } catch (error: any) {
-      console.error('API request failed:', error);
+      console.error('API request failed:', { url, error });
       // Если это уже обработанная ошибка, передаем как есть
       if (error.response) {
       throw error;
@@ -198,10 +203,18 @@ class ApiService {
   }
 
   async cancelBooking(bookingId: string, reason: string): Promise<ApiResponse<any>> {
-    return this.request<any>(`/bookings/${bookingId}/cancel`, {
-      method: 'PUT',
-      body: JSON.stringify({ reason }),
-    });
+    console.log('Отправка запроса на отмену бронирования:', { bookingId, reason });
+    try {
+      const result = await this.request<any>(`/bookings/${bookingId}/cancel`, {
+        method: 'PUT',
+        body: JSON.stringify({ reason }),
+      });
+      console.log('Результат отмены бронирования:', result);
+      return result;
+    } catch (error) {
+      console.error('Ошибка в cancelBooking API:', error);
+      throw error;
+    }
   }
 
   async updateBookingStatus(bookingId: string, status: string): Promise<ApiResponse<any>> {

@@ -38,18 +38,48 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Jura", "Roboto", "Helvetica", "Arial", sans-serif',
     h1: {
       fontSize: '2.5rem',
-      fontWeight: 600,
+      fontWeight: 700,
+      fontOpticalSizing: 'auto',
+      letterSpacing: '-0.01em',
     },
     h2: {
       fontSize: '2rem',
-      fontWeight: 500,
+      fontWeight: 600,
+      fontOpticalSizing: 'auto',
+      letterSpacing: '-0.005em',
     },
     h3: {
       fontSize: '1.75rem',
-      fontWeight: 500,
+      fontWeight: 600,
+      fontOpticalSizing: 'auto',
+    },
+    h4: {
+      fontSize: '1.5rem',
+      fontWeight: 600,
+      fontOpticalSizing: 'auto',
+    },
+    h5: {
+      fontSize: '1.25rem',
+      fontWeight: 600,
+      fontOpticalSizing: 'auto',
+    },
+    h6: {
+      fontSize: '1.125rem',
+      fontWeight: 600,
+      fontOpticalSizing: 'auto',
+    },
+    body1: {
+      fontSize: '1rem',
+      lineHeight: 1.6,
+      fontOpticalSizing: 'auto',
+    },
+    body2: {
+      fontSize: '0.875rem',
+      lineHeight: 1.5,
+      fontOpticalSizing: 'auto',
     },
   },
   components: {
